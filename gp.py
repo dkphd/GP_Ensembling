@@ -1,0 +1,179 @@
+from tinygrad.tensor import Tensor
+import tinygrad
+
+import numpy as np
+from enum import Enum
+from functools import reduce
+from operator import add, sub, mul, truediv
+import random
+
+from graphviz import Digraph
+
+
+class Node:
+    def __init__(self, parent=None, children=[], tree=None):
+        self.parent = parent
+        self.children = children  # child nodes
+        self.tree = tree
+
+    def add_child(self, child_node):
+        self.children.append(child_node)
+
+
+class OperatorNode(Node):
+    def __init__(self, parent, children, tree):
+        super().__init__(parent, children, tree)
+        self.parent = parent
+        self.children = children
+
+    def calculate(self):
+        pass
+
+    def __str__(self):
+        return f"OperatorNode: {None}"
+
+
+class BinaryOperatorNode(OperatorNode):
+    def __init__(self, parent, children, tree):
+        super().__init__(parent, children, tree)
+        self.operator = lambda x: None
+
+    def calculate(self):
+        return reduce(
+            lambda x, y: self.operator(x, y),
+            [self.parent.evaluation if self.parent.evaluation is not None else self.parent.value]
+            + [child.calculate() for child in self.children],
+        )
+
+    def __str__(self):
+        return f"BinaryOperatorNode: {self.operator}"
+
+
+class AddNode(BinaryOperatorNode):
+    def __init__(self, parent, children, tree):
+        super().__init__(parent, children, tree)
+        self.operator = add
+
+
+class SubNode(BinaryOperatorNode):
+    def __init__(self, parent, children, tree):
+        super().__init__(parent, children, tree)
+        self.operator = sub
+
+
+class MulNode(BinaryOperatorNode):
+    def __init__(self, parent, children, tree):
+        super().__init__(parent, children, tree)
+        self.operator = mul
+
+
+class DivNode(BinaryOperatorNode):
+    def __init__(self, parent, children, tree):
+        super().__init__(parent, children, tree)
+        self.operator = truediv
+
+
+class WeightedMeanNode(BinaryOperatorNode):
+    def __init__(self, parent, children, tree, weight_top=0.5):
+        super().__init__(parent, children, tree)
+        self.weight_top = weight_top
+        self.operator = lambda x, y: self.weight_top * x + (1 - self.weight_top) * y
+
+
+class ValueNode(Node):
+    def __init__(self, parent, children, tree, value):
+        super().__init__(parent, children, tree)
+        self.value = value
+        self.evaluation = None
+
+    def calculate(self):
+        if self.children:
+            self.evaluation = self.children[0].calculate()
+        else:
+            self.evaluation = self.value
+        return self.evaluation
+
+    def __str__(self):
+        return f"ValueNode: {self.value}"
+
+    def add_child(self, child_node):
+        super().add_child(child_node)
+        self.evaluation = None
+
+
+class Tree:
+    def __init__(self, models=None):
+        if models is None:
+            self.models = [Tensor.randn(1, 2) for _ in range(10)]
+            self.debug = True
+        else:
+            self.models = models
+            self.debug = False
+
+        self.root = ValueNode(None, [], self, np.random.choice(self.models))
+        self.nodes = [self.root]
+
+    def grow_tree(self, node, depth=0, max_depth=3):
+        if depth >= max_depth:
+            return
+
+        # Add operator
+        op_node = random.choice([AddNode, SubNode, MulNode, DivNode, WeightedMeanNode])(node, [], self)
+        node.add_child(op_node)
+        self.nodes.append(op_node)
+
+        # Determine the number of children for the operator (either 1 or 2)
+        num_children = 2 if random.random() < 0.2 or depth <= 1 else 1  # 20% chance for 2 children
+
+        for i in range(num_children):
+            # Add model with a unique ID (for illustration)
+            val = np.random.choice(self.models)
+            model_node = ValueNode(op_node, [], self, val)
+            op_node.add_child(model_node)
+
+            self.nodes.append(model_node)
+
+            # Recursively grow the tree
+            self.grow_tree(model_node, depth + 1, max_depth)
+
+
+def draw_tree(node, dot=None):
+    if dot is None:
+        dot = Digraph(comment="Tree")
+
+    if isinstance(node, ValueNode):
+        value = node.value.numpy() if node.tree.debug else f"Tensor with memory adress: {id(node.value)}"
+
+        if node.tree.debug:
+            if node.evaluation is not None:
+                evaluation = node.evaluation.numpy()
+            else:
+                evaluation = None
+        else:
+            evaluation = f"Tensor with memory adress: {id(node.evaluation)}" if node.evaluation is not None else None
+
+        dot.node(
+            f"{id(node)}",
+            f"Value Node\nValue: {value} | Eval: {evaluation}",
+        )
+    else:
+        dot.node(f"{id(node)}", f"Op\n{node.operator}")
+
+    for child in node.children:
+        draw_tree(child, dot)
+        dot.edge(f"{id(node)}", f"{id(child)}")
+
+    return dot
+
+
+if __name__ == "__main__":
+    tree = Tree()
+    tree.grow_tree(tree.root, max_depth=3)
+    dot = draw_tree(tree.root)
+    dot.render("tree", view=False, format="png")
+
+    # Calculate the tree
+    print(tree.root.calculate())
+    dot = draw_tree(tree.root)
+    tree.root.evaluation.numpy()
+    dot.render("tree2", view=False, format="png")
