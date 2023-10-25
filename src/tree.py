@@ -4,9 +4,7 @@ import numpy as np
 
 import random
 
-from functools import partial
-
-from src.node import ValueNode
+from src.node import *
 
 
 class Tree:
@@ -28,3 +26,53 @@ class Tree:
     @property
     def nodes_count(self):
         return len(self.nodes["value_nodes"]) + len(self.nodes["op_nodes"])
+
+    def prune_at(self, node: Node):
+        if node.parent is None:
+            raise Exception("Cannot prune root node")
+
+        subtree_nodes = node.get_nodes()
+
+        for node in subtree_nodes:
+            if isinstance(node, ValueNode):
+                self.nodes["value_nodes"].remove(node)
+            else:
+                self.nodes["op_nodes"].remove(node)
+
+        node.parent.children.remove(node)
+
+        self._clean_evals()
+
+    def append_after(self, node: Node):
+        subtree_nodes = node.get_nodes()
+
+        for node in subtree_nodes:
+            if isinstance(node, ValueNode):
+                self.nodes["value_nodes"].append(node)
+            else:
+                self.nodes["op_nodes"].append(node)
+
+        node.parent.children.append(node)
+
+        self._clean_evals()
+
+    def replace_at(self, at: Node, replacement: Node):
+        at_parent = at.parent
+        at_parent.children.remove(at)
+
+        replacement.parent = at_parent
+        at_parent.children.append(replacement)
+        replacement.children = at.children
+
+        if isinstance(at, ValueNode):
+            self.nodes["value_nodes"].remove(at)
+            self.nodes["value_nodes"].append(replacement)
+        else:
+            self.nodes["op_nodes"].remove(at)
+            self.nodes["op_nodes"].append(replacement)
+
+        self._clean_evals()
+
+    def _clean_evals(self):
+        for node in self.nodes["value_nodes"]:
+            node.evaluation = None
