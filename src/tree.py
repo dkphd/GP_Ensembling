@@ -27,6 +27,10 @@ class Tree:
     def nodes_count(self):
         return len(self.nodes["value_nodes"]) + len(self.nodes["op_nodes"])
 
+    def recalculate(self):
+        self._reset_evals()
+        return self.evaluation
+
     def prune_at(self, node: Node):
         if node.parent is None:
             raise Exception("Cannot prune root node")
