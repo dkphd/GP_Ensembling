@@ -2,6 +2,7 @@ from tinygrad.tensor import Tensor
 
 from functools import partial
 
+
 class Node:
     def __init__(self, parent=None, children=[], tree=None):
         self.parent = parent
@@ -35,7 +36,7 @@ class ReductionOperatorNode(OperatorNode):
 
         concat = Tensor.stack([parent_eval] + [child.calculate() for child in self.children], dim=0)
         return self.operator(concat)
-    
+
 
 class MeanNode(ReductionOperatorNode):
     def __init__(self, parent, children, tree):
@@ -44,7 +45,7 @@ class MeanNode(ReductionOperatorNode):
 
     def __str__(self):
         return f"MeanNode"
-    
+
 
 class WeightedMeanNode(MeanNode):
     def __init__(self, parent, children, tree, weights: Tensor):
@@ -65,7 +66,7 @@ class MaxNode(ReductionOperatorNode):
 
     def __str__(self):
         return f"MaxNode"
-    
+
 
 class MinNode(ReductionOperatorNode):
     def __init__(self, parent, children, tree):
