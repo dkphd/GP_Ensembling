@@ -17,6 +17,7 @@ class Node(ABC):
         self.parent = parent
         self.children = children if children is not None else []
         self.tree = tree
+        self.type = None
 
     def add_child(self, child_node: Self):
         """

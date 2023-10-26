@@ -16,7 +16,7 @@ class Tree:
             self.models = models
             self.debug = False
 
-        self.root = ValueNode(None, [], self, np.random.choice(self.models))
+        self.root = ValueNode(None, [], self, np.random.choice(models))
         self.nodes = {"value_nodes": [self.root], "op_nodes": []}
 
     @property
@@ -28,7 +28,7 @@ class Tree:
         return len(self.nodes["value_nodes"]) + len(self.nodes["op_nodes"])
 
     def recalculate(self):
-        self._reset_evals()
+        self._clean_evals()
         return self.evaluation
 
     def prune_at(self, node: Node):
@@ -61,11 +61,16 @@ class Tree:
         self._clean_evals()
 
     def replace_at(self, at: Node, replacement: Node):
-        at_parent = at.parent
-        at_parent.children.remove(at)
 
-        replacement.parent = at_parent
-        at_parent.children.append(replacement)
+        at_parent = at.parent
+        
+        if at_parent is None:
+            print("Warning: node at replacement is root node")
+        else:
+            at_parent.children.remove(at)
+            replacement.parent = at_parent
+            at_parent.children.append(replacement)
+
         replacement.children = at.children
 
         if isinstance(at, ValueNode):
@@ -76,6 +81,12 @@ class Tree:
             self.nodes["op_nodes"].append(replacement)
 
         self._clean_evals()
+
+    def get_random_node(self, node_type: str = None):
+        if node_type is None:
+            node_type = random.choice(["value_nodes", "op_nodes"])
+
+        return random.choice(self.nodes[node_type])
 
     def _clean_evals(self):
         for node in self.nodes["value_nodes"]:
