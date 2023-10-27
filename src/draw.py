@@ -4,7 +4,15 @@ from src.node import ValueNode
 
 import numpy as np
 
-def draw_tree(node, dot=None):
+from typing import Any
+
+def draw_tree(to_draw: Any[Tree, Node], dot=None):
+
+    if isinstance(to_draw, Tree):
+        node = to_draw.root
+    else:
+        node = to_draw
+
     if dot is None:
         dot = Digraph(comment="Tree")
 
