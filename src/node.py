@@ -147,6 +147,10 @@ class WeightedMeanNode(MeanNode):
     def copy(self):
         return WeightedMeanNode(None, None, self.weights)
 
+    
+    def add_child(self, child_node: Self):
+        raise Exception("Adding child to weighted mean node is currently not supported due to the way weights are handled.")
+
 
 class MaxNode(ReductionOperatorNode):
     """
