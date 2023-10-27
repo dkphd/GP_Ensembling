@@ -66,6 +66,7 @@ class Tree:
         
         if at_parent is None:
             print("Warning: node at replacement is root node")
+            self.root = replacement
         else:
             at_parent.children.remove(at)
             replacement.parent = at_parent
@@ -87,6 +88,15 @@ class Tree:
             node_type = random.choice(["value_nodes", "op_nodes"])
 
         return random.choice(self.nodes[node_type])
+
+    
+    def update_nodes(self):
+        self.nodes = {"value_nodes": [self.root], "op_nodes": []}
+        for node in self.root.get_nodes():
+            if isinstance(node, ValueNode):
+                self.nodes["value_nodes"].append(node)
+            else:
+                self.nodes["op_nodes"].append(node)
 
 
     def _clean_evals(self):
