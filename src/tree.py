@@ -88,6 +88,8 @@ class Tree:
 
         return random.choice(self.nodes[node_type])
 
+
     def _clean_evals(self):
         for node in self.nodes["value_nodes"]:
             node.evaluation = None
+

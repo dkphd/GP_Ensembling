@@ -13,10 +13,9 @@ class Node(ABC):
     capable of holding children and a reference to their parent node.
     """
 
-    def __init__(self, parent: Optional[Self] = None, children: Optional[List[Self]] = None, tree=None):
+    def __init__(self, parent: Optional[Self] = None, children: Optional[List[Self]] = None):
         self.parent = parent
         self.children = children if children is not None else []
-        self.tree = tree
         self.type = None
 
     def add_child(self, child_node: Self):
@@ -40,6 +39,26 @@ class Node(ABC):
             nodes += child.get_nodes()
         nodes.append(self)
         return nodes
+    
+
+    def deepcopy(self):
+        """
+        Create a deep copy of the node.
+
+        Returns:
+        - Deep copy of the node
+        """
+        pass
+
+
+    def copy_subtree(self):
+        """
+        Copy the subtree rooted at this node.
+
+        Returns:
+        - Copy of the subtree rooted at this node
+        """
+        pass
 
 
 class OperatorNode(Node, ABC):
@@ -49,8 +68,8 @@ class OperatorNode(Node, ABC):
     Operator Nodes are specialized nodes capable of performing operations on tensors.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], tree):
-        super().__init__(parent, children, tree)
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
+        super().__init__(parent, children)
 
     @abstractmethod
     def calculate(self) -> Tensor:
@@ -71,8 +90,8 @@ class ReductionOperatorNode(OperatorNode, ABC):
     of performing reduction operations like mean, max, min, etc., on tensors.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], tree):
-        super().__init__(parent, children, tree)
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
+        super().__init__(parent, children)
         self.operator: Callable[[Tensor], Tensor] = lambda x: None
 
     def calculate(self) -> Tensor:
@@ -88,8 +107,8 @@ class MeanNode(ReductionOperatorNode):
     A Mean Node computes the mean along a specified axis of a tensor.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], tree):
-        super().__init__(parent, children, tree)
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
+        super().__init__(parent, children)
         self.operator = partial(Tensor.mean, axis=0)
 
     def __str__(self) -> str:
@@ -104,8 +123,8 @@ class WeightedMeanNode(MeanNode):
     but with different weights applied to each element.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], tree, weights: Tensor):
-        super().__init__(parent, children, tree)
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], weights: Tensor):
+        super().__init__(parent, children)
 
         assert len(weights.shape) == 2
         assert weights.shape[0] == 1
@@ -122,8 +141,8 @@ class MaxNode(ReductionOperatorNode):
     A Max Node computes the maximum value along a specified axis of a tensor.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], tree):
-        super().__init__(parent, children, tree)
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
+        super().__init__(parent, children)
         self.operator = partial(Tensor.max, axis=0)
 
     def __str__(self) -> str:
@@ -137,8 +156,8 @@ class MinNode(ReductionOperatorNode):
     A Min Node computes the minimum value along a specified axis of a tensor.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], tree):
-        super().__init__(parent, children, tree)
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
+        super().__init__(parent, children)
         self.operator = partial(Tensor.min, axis=0)
 
     def __str__(self) -> str:
@@ -152,8 +171,8 @@ class ValueNode(Node):
     A Value Node holds a specific value or tensor.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], tree, value: Tensor):
-        super().__init__(parent, children, tree)
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], value: Tensor):
+        super().__init__(parent, children)
         self.value = value
         self.evaluation = None
 

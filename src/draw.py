@@ -2,21 +2,21 @@ from graphviz import Digraph
 
 from src.node import ValueNode
 
+import numpy as np
 
 def draw_tree(node, dot=None):
     if dot is None:
         dot = Digraph(comment="Tree")
 
     if isinstance(node, ValueNode):
-        value = node.value.numpy() if node.tree.debug else f"Tensor with memory adress: {id(node.value)}"
+        value = node.value.numpy() if (np.prod(node.value.shape) <= 9) else f"Tensor with memory adress: {id(node.value)}"
 
-        if node.tree.debug:
-            if node.evaluation is not None:
-                evaluation = node.evaluation.numpy()
-            else:
-                evaluation = None
+        
+        if node.evaluation is not None:
+            evaluation = value = node.evaluation.numpy() if (np.prod(node.evaluation.shape) <= 9) else f"Tensor with memory adress: {id(node.evaluation)}"
         else:
-            evaluation = f"Tensor with memory adress: {id(node.evaluation)}" if node.evaluation is not None else None
+            evaluation = None
+
 
         dot.node(
             f"{id(node)}",
