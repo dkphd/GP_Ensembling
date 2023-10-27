@@ -63,16 +63,17 @@ class Tree:
 
         self._clean_evals()
 
-    def append_after(self, node: Node):
-        subtree_nodes = node.get_nodes()
+    def append_after(self, node: Node, new_node: Node):
+        subtree_nodes = new_node.get_nodes()
 
         for node in subtree_nodes:
             if isinstance(node, ValueNode):
-                self.nodes["value_nodes"].append(node)
+                self.nodes["value_nodes"].append(new_node)
             else:
-                self.nodes["op_nodes"].append(node)
+                self.nodes["op_nodes"].append(new_node)
 
-        node.parent.children.append(node)
+        new_node.parent = node
+        node.children.append(new_node)
 
         self._clean_evals()
 
@@ -105,7 +106,7 @@ class Tree:
 
     
     def update_nodes(self):
-        self.nodes = {"value_nodes": [self.root], "op_nodes": []}
+        self.nodes = {"value_nodes": [], "op_nodes": []}
         for node in self.root.get_nodes():
             if isinstance(node, ValueNode):
                 self.nodes["value_nodes"].append(node)
