@@ -8,16 +8,29 @@ from src.node import *
 
 
 class Tree:
-    def __init__(self, models=None):
-        if models is None:
-            self.models = [Tensor.randn(1, 2) for _ in range(10)]
-            self.debug = True
-        else:
-            self.models = models
-            self.debug = False
+    def __init__(self, root: ValueNode):
 
-        self.root = ValueNode(None, [], np.random.choice(self.models))
+        self.root = root
         self.nodes = {"value_nodes": [self.root], "op_nodes": []}
+
+    # factory methods
+    @staticmethod
+    def create_tree_from_models(models):
+        idx = np.random.choice(len(models))
+        root = ValueNode(None, [], models[idx], idx)
+        tree = Tree(root)
+        return tree
+
+    @staticmethod
+    def create_random_tree():
+        root = ValueNode(None, [], Tensor.randn(1, 2))
+        tree = Tree(root)
+        return tree
+
+    def create_tree_from_root(root: Node):
+        tree =  Tree(root)
+        tree.update_nodes()
+        return tree
 
     @property
     def evaluation(self):
@@ -30,6 +43,9 @@ class Tree:
     def recalculate(self):
         self._clean_evals()
         return self.evaluation
+
+    def copy(self):
+        return Tree.create_tree_from_root(self.root.copy_subtree())
 
     def prune_at(self, node: Node):
         if node.parent is None:
@@ -71,8 +87,6 @@ class Tree:
             at_parent.children.remove(at)
             replacement.parent = at_parent
             at_parent.children.append(replacement)
-
-        replacement.children = at.children
 
         if isinstance(at, ValueNode):
             self.nodes["value_nodes"].remove(at)

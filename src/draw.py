@@ -17,10 +17,14 @@ def draw_tree(node, dot=None):
         else:
             evaluation = None
 
+        display_string = f"Value Node\n"
+        if node.id is not None:
+            display_string += f"Model ID: {node.id}\n"
+        display_string += f"Value: {value} | Eval: {evaluation}"
 
         dot.node(
             f"{id(node)}",
-            f"Value Node\nValue: {value} | Eval: {evaluation}",
+            display_string,
         )
     else:
         dot.node(f"{id(node)}", f"Op\n{node.operator}")

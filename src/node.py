@@ -190,10 +190,11 @@ class ValueNode(Node):
     A Value Node holds a specific value or tensor.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], value: Tensor):
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], value: Tensor, id: int = None):
         super().__init__(parent, children)
         self.value = value
         self.evaluation = None
+        self.id = id
 
     def calculate(self):
         if self.children:
@@ -210,5 +211,5 @@ class ValueNode(Node):
         self.evaluation = None
 
     def copy(self):
-        return ValueNode(None, None, self.value)
+        return ValueNode(None, None, self.value, self.id)
     
