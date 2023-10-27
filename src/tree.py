@@ -16,7 +16,7 @@ class Tree:
             self.models = models
             self.debug = False
 
-        self.root = ValueNode(None, [], self, np.random.choice(self.models))
+        self.root = ValueNode(None, [], np.random.choice(self.models))
         self.nodes = {"value_nodes": [self.root], "op_nodes": []}
 
     @property
