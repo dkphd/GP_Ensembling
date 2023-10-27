@@ -41,12 +41,14 @@ class Node(ABC):
         return nodes
     
 
-    def deepcopy(self):
+    @abstractmethod
+    def copy(self):
         """
-        Create a deep copy of the node.
+        Create a copy of the node.
+        It's children and parent references are not copied.
 
         Returns:
-        - Deep copy of the node
+        - Copy of the node
         """
         pass
 
@@ -58,18 +60,12 @@ class Node(ABC):
         Returns:
         - Copy of the subtree rooted at this node
         """
-        pass
+        self_copy = self.copy()
+        self_copy.children = [child.copy_subtree() for child in self.children]
+        for child in self_copy.children:
+            child.parent = self_copy
+        return self_copy
 
-
-class OperatorNode(Node, ABC):
-    """
-    Abstract Base Class for an Operator Node in a computational tree.
-
-    Operator Nodes are specialized nodes capable of performing operations on tensors.
-    """
-
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children)
 
     @abstractmethod
     def calculate(self) -> Tensor:
@@ -82,6 +78,18 @@ class OperatorNode(Node, ABC):
         pass
 
 
+class OperatorNode(Node, ABC):
+    """
+    Abstract Base Class for an Operator Node in a computational tree.
+
+    Operator Nodes are specialized nodes capable of performing operations on tensors.
+    """
+
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], operator: Callable[[Tensor], Tensor] = lambda x: None):
+        super().__init__(parent, children)
+        self.operator = operator
+
+
 class ReductionOperatorNode(OperatorNode, ABC):
     """
     Abstract Base Class for a Reduction Operator Node in a computational tree.
@@ -90,9 +98,8 @@ class ReductionOperatorNode(OperatorNode, ABC):
     of performing reduction operations like mean, max, min, etc., on tensors.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children)
-        self.operator: Callable[[Tensor], Tensor] = lambda x: None
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], operator: Callable[[Tensor], Tensor] = lambda x: None):
+        super().__init__(parent, children, operator)
 
     def calculate(self) -> Tensor:
         parent_eval = self.parent.evaluation if self.parent.evaluation is not None else self.parent.value
@@ -108,11 +115,14 @@ class MeanNode(ReductionOperatorNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children)
-        self.operator = partial(Tensor.mean, axis=0)
+        super().__init__(parent, children, partial(Tensor.mean, axis=0))
 
     def __str__(self) -> str:
         return f"MeanNode"
+    
+
+    def copy(self):
+        return MeanNode(None, None)
 
 
 class WeightedMeanNode(MeanNode):
@@ -124,14 +134,18 @@ class WeightedMeanNode(MeanNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]], weights: Tensor):
-        super().__init__(parent, children)
-
+        
         assert len(weights.shape) == 2
         assert weights.shape[0] == 1
         assert weights.shape[1] == len(children) + 1
 
         self.weights = weights
-        self.operator = lambda x: super().operator(x * self.weights)
+
+        super().__init__(parent, children, lambda x: super().operator(x * self.weights))
+
+
+    def copy(self):
+        return WeightedMeanNode(None, None, self.weights)
 
 
 class MaxNode(ReductionOperatorNode):
@@ -142,11 +156,13 @@ class MaxNode(ReductionOperatorNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children)
-        self.operator = partial(Tensor.max, axis=0)
+        super().__init__(parent, children, partial(Tensor.max, axis=0))
 
     def __str__(self) -> str:
         return f"MaxNode"
+    
+    def copy(self):
+        return MaxNode(None, None)
 
 
 class MinNode(ReductionOperatorNode):
@@ -157,11 +173,14 @@ class MinNode(ReductionOperatorNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children)
-        self.operator = partial(Tensor.min, axis=0)
+        super().__init__(parent, children, partial(Tensor.min, axis=0))
 
     def __str__(self) -> str:
         return f"MinNode"
+
+
+    def copy(self):
+        return MinNode(None, None)
 
 
 class ValueNode(Node):
@@ -189,3 +208,7 @@ class ValueNode(Node):
     def add_child(self, child_node):
         super().add_child(child_node)
         self.evaluation = None
+
+    def copy(self):
+        return ValueNode(None, None, self.value)
+    
