@@ -13,7 +13,7 @@ def draw_tree(node, dot=None):
 
         
         if node.evaluation is not None:
-            evaluation = value = node.evaluation.numpy() if (np.prod(node.evaluation.shape) <= 9) else f"Tensor with memory adress: {id(node.evaluation)}"
+            evaluation = node.evaluation.numpy() if (np.prod(node.evaluation.shape) <= 9) else f"Tensor with memory adress: {id(node.evaluation)}"
         else:
             evaluation = None
 
