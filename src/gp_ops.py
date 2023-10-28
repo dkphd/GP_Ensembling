@@ -3,7 +3,9 @@ from src.node import *
 
 from copy import deepcopy
 
-def crossover(tree1: Tree, tree2: Tree, debug=False):
+import numpy as np
+
+def crossover(tree1: Tree, tree2: Tree, debug=False, mutation_chance_crossover=False):
 
     tree1, tree2 = tree1.copy(), tree2.copy()
 
@@ -19,6 +21,13 @@ def crossover(tree1: Tree, tree2: Tree, debug=False):
     tree1.recalculate()
     tree2.recalculate()
 
+    if mutation_chance_crossover:
+        mut_chances = [tree1.mutation_chance, tree2.mutation_chance]
+        left_bound = np.clip(0.9*np.min(mut_chances), 0, 1)
+        right_bound = np.clip(1.1*np.max(mut_chances), 0, 1)
+        tree1.mutation_chance, tree2.mutation_chance = np.random.uniform(left_bound, right_bound, 2)
+
+
     if debug:
         if isinstance(node1, ValueNode):
             print(f"Crossover performed at node with id {node1.id} with value {node1.value.numpy()} and node with id {node2.id} with value {node2.value.numpy()}")
@@ -26,3 +35,29 @@ def crossover(tree1: Tree, tree2: Tree, debug=False):
             print(f"Crossover performed at node {node1} and node {node2}")
 
     return tree1, tree2
+
+
+def append_new_node_mutation(tree: Tree, models, debug=False):
+    tree = tree.copy()
+
+    idx_model = np.random.randint(len(models))
+
+    node = tree.get_random_node()
+    if isinstance(node, ValueNode):
+        new_op = MeanNode(node, []) # TODO: randomize operator
+        new_val = ValueNode(new_op, [], models[idx_model], idx_model)
+        new_op.add_child(new_val)
+        tree.append_after(node, new_op)
+    else:
+        new_val = ValueNode(None, [], models[idx_model], idx_model)
+        tree.append_after(node, new_val)
+
+    tree.recalculate()
+
+    if debug:
+        if isinstance(node, ValueNode):
+            print(f"Append mutation performed at node with id {node.id} with value {node.value.numpy()}")
+        else:
+            print(f"Append mutation performed at node {node}")
+
+    return tree

@@ -8,27 +8,28 @@ from src.node import *
 
 
 class Tree:
-    def __init__(self, root: ValueNode):
+    def __init__(self, root: ValueNode, mutation_chance=0.1):
 
         self.root = root
         self.nodes = {"value_nodes": [self.root], "op_nodes": []}
+        self.mutation_chance = mutation_chance
 
     # factory methods
     @staticmethod
-    def create_tree_from_models(models):
+    def create_tree_from_models(models, mutation_chance = 0.1):
         idx = np.random.choice(len(models))
         root = ValueNode(None, [], models[idx], idx)
-        tree = Tree(root)
+        tree = Tree(root, mutation_chance)
         return tree
 
     @staticmethod
-    def create_random_tree():
+    def create_random_tree(mutation_chance = 0.1):
         root = ValueNode(None, [], Tensor.randn(1, 2))
-        tree = Tree(root)
+        tree = Tree(root, mutation_chance)
         return tree
 
-    def create_tree_from_root(root: Node):
-        tree =  Tree(root)
+    def create_tree_from_root(root: Node, mutation_chance = 0.1):
+        tree =  Tree(root, mutation_chance)
         tree.update_nodes()
         return tree
 
@@ -53,11 +54,11 @@ class Tree:
 
         subtree_nodes = node.get_nodes()
 
-        for node in subtree_nodes:
-            if isinstance(node, ValueNode):
-                self.nodes["value_nodes"].remove(node)
+        for subtree_node in subtree_nodes:
+            if isinstance(subtree_node, ValueNode):
+                self.nodes["value_nodes"].remove(subtree_node)
             else:
-                self.nodes["op_nodes"].remove(node)
+                self.nodes["op_nodes"].remove(subtree_node)
 
         node.parent.children.remove(node)
 
@@ -66,11 +67,11 @@ class Tree:
     def append_after(self, node: Node, new_node: Node):
         subtree_nodes = new_node.get_nodes()
 
-        for node in subtree_nodes:
-            if isinstance(node, ValueNode):
-                self.nodes["value_nodes"].append(new_node)
+        for subtree_node in subtree_nodes:
+            if isinstance(subtree_node, ValueNode):
+                self.nodes["value_nodes"].append(subtree_node)
             else:
-                self.nodes["op_nodes"].append(new_node)
+                self.nodes["op_nodes"].append(subtree_node)
 
         new_node.parent = node
         node.children.append(new_node)
@@ -104,7 +105,6 @@ class Tree:
 
         return random.choice(self.nodes[node_type])
 
-    
     def update_nodes(self):
         self.nodes = {"value_nodes": [], "op_nodes": []}
         for node in self.root.get_nodes():
