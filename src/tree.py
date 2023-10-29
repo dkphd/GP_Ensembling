@@ -16,9 +16,14 @@ class Tree:
 
     # factory methods
     @staticmethod
-    def create_tree_from_models(models, mutation_chance = 0.1):
+    def create_tree_from_models(models, mutation_chance = 0.1, ids = None):
+        if ids is None:
+            ids = np.arange(len(models))
+        assert len(models) == len(ids)
+
+
         idx = np.random.choice(len(models))
-        root = ValueNode(None, [], models[idx], idx)
+        root = ValueNode(None, [], models[idx], ids[idx])
         tree = Tree(root, mutation_chance)
         return tree
 
@@ -100,6 +105,13 @@ class Tree:
         self._clean_evals()
 
     def get_random_node(self, nodes_type: str = None, allow_root=True):
+
+        if self.root.children == []:
+            if allow_root:
+                return self.root
+            else:
+                raise Exception("Tree has only root node and allow_root is set to False")
+
         if nodes_type is None:
             node_type = random.choice(["value_nodes", "op_nodes"])
         if not allow_root and nodes_type == "value_nodes":

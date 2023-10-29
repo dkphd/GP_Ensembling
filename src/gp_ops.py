@@ -37,26 +37,27 @@ def crossover(tree1: Tree, tree2: Tree, debug=False, mutation_chance_crossover=F
     return tree1, tree2
 
 
-def append_new_node_mutation(tree: Tree, models, debug=False):
+def append_new_node_mutation(tree: Tree, models, ids = None, debug=False):
     tree = tree.copy()
 
-    idx_model = np.random.randint(len(models))
+    if ids is None:
+        ids = np.arange(len(models))
+
+    idx_model = np.random.choice(np.arange(len(models)))
 
     node = tree.get_random_node()
     if isinstance(node, ValueNode):
         new_op = MeanNode(node, []) # TODO: randomize operator
-        new_val = ValueNode(new_op, [], models[idx_model], idx_model)
+        new_val = ValueNode(new_op, [], models[idx_model], ids[idx_model])
         new_op.add_child(new_val)
         tree.append_after(node, new_op)
     else:
-        new_val = ValueNode(None, [], models[idx_model], idx_model)
+        new_val = ValueNode(None, [], models[idx_model], ids[idx_model])
         tree.append_after(node, new_val)
-
-    tree.recalculate()
 
     if debug:
         if isinstance(node, ValueNode):
-            print(f"Append mutation performed at node with id {node.id} with value {node.value.numpy()}")
+            print(f"Append mutation performed at node with id {node.id}")
         else:
             print(f"Append mutation performed at node {node}")
 
