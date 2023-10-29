@@ -99,11 +99,17 @@ class Tree:
 
         self._clean_evals()
 
-    def get_random_node(self, node_type: str = None):
-        if node_type is None:
+    def get_random_node(self, nodes_type: str = None, allow_root=True):
+        if nodes_type is None:
             node_type = random.choice(["value_nodes", "op_nodes"])
+        if not allow_root and nodes_type == "value_nodes":
+            node = self.root
+            while node == self.root:
+                node = random.choice(self.nodes[node_type])
+            return node
+        else:
+            return random.choice(self.nodes[node_type])
 
-        return random.choice(self.nodes[node_type])
 
     def update_nodes(self):
         self.nodes = {"value_nodes": [], "op_nodes": []}

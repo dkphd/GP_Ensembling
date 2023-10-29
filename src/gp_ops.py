@@ -61,3 +61,11 @@ def append_new_node_mutation(tree: Tree, models, debug=False):
             print(f"Append mutation performed at node {node}")
 
     return tree
+
+def lose_branch_mutation(tree: Tree):
+
+    tree = tree.copy()
+    node = tree.get_random_node(allow_root=False)
+    tree.prune_at(node)
+
+    return tree
