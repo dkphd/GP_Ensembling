@@ -202,7 +202,8 @@ class ValueNode(Node):
 
     def calculate(self):
         if self.children:
-            self.evaluation = self.children[0].calculate()
+            for child in self.children:
+                self.evaluation = child.calculate()
         else:
             self.evaluation = self.value
         return self.evaluation
