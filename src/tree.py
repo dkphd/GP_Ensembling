@@ -5,7 +5,7 @@ import numpy as np
 import random
 
 from src.node import *
-
+from src.globals import DEBUG
 
 class Tree:
     def __init__(self, root: ValueNode, mutation_chance=0.1):
@@ -92,7 +92,8 @@ class Tree:
         at_parent = at.parent
         
         if at_parent is None:
-            print("Warning: node at replacement is root node")
+            if DEBUG:
+                print("Warning: node at replacement is root node")
             self.root = replacement
             if isinstance(self.root, OperatorNode):
                 raise Exception("Cannot get evaluation of tree with OpNode as root")
