@@ -11,6 +11,10 @@ class Tree:
     def __init__(self, root: ValueNode, mutation_chance=0.1):
 
         self.root = root
+
+        if isinstance(self.root, OperatorNode):
+            raise Exception("Cannot get evaluation of tree with OpNode as root")
+
         self.nodes = {"value_nodes": [self.root], "op_nodes": []}
         self.mutation_chance = mutation_chance
 
@@ -90,6 +94,9 @@ class Tree:
         if at_parent is None:
             print("Warning: node at replacement is root node")
             self.root = replacement
+            if isinstance(self.root, OperatorNode):
+                raise Exception("Cannot get evaluation of tree with OpNode as root")
+
         else:
             at_parent.children.remove(at)
             replacement.parent = at_parent
@@ -108,19 +115,25 @@ class Tree:
 
         if self.root.children == []:
             if allow_root:
-                return self.root
+                if nodes_type is None or nodes_type == "value_nodes":
+                    return self.root
+                else:
+                    raise Exception("Tree has only root node and nodes_type is not value_nodes")
             else:
                 raise Exception("Tree has only root node and allow_root is set to False")
 
+
+
         if nodes_type is None:
-            node_type = random.choice(["value_nodes", "op_nodes"])
+            nodes_type = random.choice(["value_nodes", "op_nodes"])
+
         if not allow_root and nodes_type == "value_nodes":
             node = self.root
             while node == self.root:
-                node = random.choice(self.nodes[node_type])
+                node = random.choice(self.nodes[nodes_type])
             return node
         else:
-            return random.choice(self.nodes[node_type])
+            return random.choice(self.nodes[nodes_type])
 
 
     def update_nodes(self):
@@ -136,3 +149,8 @@ class Tree:
         for node in self.nodes["value_nodes"]:
             node.evaluation = None
 
+
+    def _scan_nodes_for_lack_of_parent(self):
+        for node in self.nodes["op_nodes"]:
+            if node.parent is None:
+                raise Exception("I have no parent!")

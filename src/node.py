@@ -151,6 +151,9 @@ class WeightedMeanNode(MeanNode):
     def add_child(self, child_node: Self):
         raise Exception("Adding child to weighted mean node is currently not supported due to the way weights are handled.")
 
+    def __str__(self) -> str:
+        return f"WeightedMeanNode with weights: {self.weights.numpy():.2f}"
+
 
 class MaxNode(ReductionOperatorNode):
     """
@@ -167,6 +170,7 @@ class MaxNode(ReductionOperatorNode):
     
     def copy(self):
         return MaxNode(None, None)
+
 
 
 class MinNode(ReductionOperatorNode):
@@ -209,7 +213,7 @@ class ValueNode(Node):
         return self.evaluation
 
     def __str__(self):
-        return f"ValueNode with value: {self.value} and evaluation: {self.evaluation}"
+        return f"ValueNode with value id: {hex(id(self.value))}"# and evaluation: {self.evaluation}"
 
     def add_child(self, child_node):
         super().add_child(child_node)
