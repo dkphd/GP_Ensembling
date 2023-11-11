@@ -12,11 +12,19 @@ def crossover(tree1: Tree, tree2: Tree, debug=False, mutation_chance_crossover=F
     node1 = tree1.get_random_node()
     if isinstance(node1, ValueNode):
         node2 = tree2.get_random_node("value_nodes")
+        if type(node1) != type(node2):
+            raise Exception("Cannot crossover nodes of different types")
     else:
-        node2 = tree2.get_random_node("op_nodes")
+        node_types = "op_nodes"
+        node2 = tree2.get_random_node(node_types)
 
-    tree1.replace_at(node1, node2.copy_subtree())
-    tree2.replace_at(node2, node1.copy_subtree())
+
+
+    replacement_node1 = node2.copy_subtree()
+    replacement_node2 = node1.copy_subtree()
+
+    tree1.replace_at(node1, replacement_node1)
+    tree2.replace_at(node2, replacement_node2)
 
     tree1.recalculate()
     tree2.recalculate()
@@ -30,7 +38,7 @@ def crossover(tree1: Tree, tree2: Tree, debug=False, mutation_chance_crossover=F
 
     if debug:
         if isinstance(node1, ValueNode):
-            print(f"Crossover performed at node with id {node1.id} with value {node1.value.numpy()} and node with id {node2.id} with value {node2.value.numpy()}")
+            print(f"Crossover performed at node with id {node1.id} and node with id {node2.id}")
         else:
             print(f"Crossover performed at node {node1} and node {node2}")
 
