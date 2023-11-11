@@ -155,3 +155,7 @@ class Tree:
         for node in self.nodes["op_nodes"]:
             if node.parent is None:
                 raise Exception("I have no parent!")
+
+
+    def __repr__(self):
+        return '_'.join(node.code for node in self.root.get_nodes())

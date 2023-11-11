@@ -78,6 +78,18 @@ class Node(ABC):
         pass
 
 
+    @property
+    @abstractmethod
+    def code(self) -> str:
+        """
+        Identifies node for duplicate handling.
+
+        Returns:
+        - Code string
+        """
+        pass
+
+
 class OperatorNode(Node, ABC):
     """
     Abstract Base Class for an Operator Node in a computational tree.
@@ -125,6 +137,11 @@ class MeanNode(ReductionOperatorNode):
         return MeanNode(None, None)
 
 
+    @property
+    def code(self) -> str:
+        return "MN"
+
+
 class WeightedMeanNode(MeanNode):
     """
     Represents a Weighted Mean Node in a computational tree.
@@ -153,6 +170,11 @@ class WeightedMeanNode(MeanNode):
 
     def __str__(self) -> str:
         return f"WeightedMeanNode with weights: {self.weights.numpy():.2f}"
+    
+
+    @property
+    def code(self) -> str:
+        return "WMN"
 
 
 class MaxNode(ReductionOperatorNode):
@@ -170,6 +192,11 @@ class MaxNode(ReductionOperatorNode):
     
     def copy(self):
         return MaxNode(None, None)
+    
+
+    @property
+    def code(self) -> str:
+        return "MXN"
 
 
 
@@ -189,6 +216,11 @@ class MinNode(ReductionOperatorNode):
 
     def copy(self):
         return MinNode(None, None)
+    
+
+    @property
+    def code(self) -> str:
+        return "MIN"
 
 
 class ValueNode(Node):
@@ -222,3 +254,7 @@ class ValueNode(Node):
     def copy(self):
         return ValueNode(None, None, self.value, self.id)
     
+
+    @property
+    def code(self) -> str:
+        return f"VN[{self.id}]"
