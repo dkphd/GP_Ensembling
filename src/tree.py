@@ -49,6 +49,12 @@ class Tree:
     @property
     def nodes_count(self):
         return len(self.nodes["value_nodes"]) + len(self.nodes["op_nodes"])
+    
+
+    @property
+    def top_sorted_nodes(self):
+        pass # TODO
+    
 
     def recalculate(self):
         self._clean_evals()
