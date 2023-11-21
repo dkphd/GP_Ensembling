@@ -4,7 +4,7 @@ from pathlib import Path
 from src.tree import Tree
 from src.draw import draw_tree
 from src.gp_ops import *
-from src.globals import DEBUG
+from src.globals import DEBUG, GLOBAL_ITERATION
 
 from tinygrad.tensor import Tensor
 from torch import load
@@ -51,12 +51,12 @@ def choose_pareto_optimal(population, fitnesses):
     if DEBUG:
         plt.figure(figsize=(6,6))
         #draw selected pareto optimal points in red and the rest in blue
-        plt.scatter(df.fitness[~mask], df['size'][~mask], c="b", label="non-pareto-optimal")
-        plt.scatter(df.fitness[mask], df['size'][mask], c="r", label="pareto-optimal")
+        plt.scatter(df['size'][~mask], df.fitness[~mask], c="b", label="non-pareto-optimal")
+        plt.scatter(df['size'][mask], df.fitness[mask], c="r", label="pareto-optimal")
         plt.legend()
-        plt.xlabel("fitness")
-        plt.ylabel("number of nodes")
-        plt.savefig('./pareto.png')
+        plt.ylabel("fitness")
+        plt.xlabel("number of nodes")
+        plt.savefig(f'./pareto_plots/pareto_{GLOBAL_ITERATION}.png')
 
     population = [population[idx] for idx in np.where(mask)[0]]
     fitnesses = fitnesses[mask]
@@ -64,10 +64,48 @@ def choose_pareto_optimal(population, fitnesses):
 
 
 def choose_sorted(population, fitnesses, n):
-    fitnesses_sorted = np.argsort(fitnesses)
-    fitnesses = fitnesses[fitnesses_sorted[-n:]]
-    population = [population[idx] for idx in fitnesses_sorted[-population_size:]]
+    # sizes = np.array([tree.nodes_count for tree in population], dtype=('sizes', int)).reshape(-1, 1)
+    # fitnesses_neg = np.array(-fitnesses, dtype=('fitnesses_neg', float)).reshape(-1, 1)
+    # to_sort = np.stack([sizes, fitnesses_neg], axis=1)
+    # argsorted = np.argsort(to_sort, order=['fitnesses_neg', 'sizes'])
+
+    sizes = np.array([tree.nodes_count for tree in population], dtype=int)
+
+    # Negate 'fitnesses' for descending order sorting
+    fitnesses_neg = -np.array(fitnesses, dtype=float)
+
+    # Create a structured array combining 'fitnesses_neg' and 'sizes'
+    combined = np.array(list(zip(fitnesses_neg, sizes)), dtype=[('fitnesses_neg', float), ('sizes', int)])
+
+    # Argsort the structured array based on 'fitnesses_neg' and 'sizes'
+    argsorted = np.argsort(combined, order=['fitnesses_neg', 'sizes'])
+
+    fitnesses = fitnesses[argsorted[:n]]
+
+    population = [population[idx] for idx in argsorted[:n]]
     return population, fitnesses
+
+
+def choose_pareto_rest_sorted(population, fitnesses, n):
+    population_pareto, fitnesses_pareto = choose_pareto_optimal(population, fitnesses)
+    pareto_codes = [tree.__repr__() for tree in population]
+
+    population_sorted, fitnesses_sorted = choose_sorted(population, fitnesses, n)
+    sorted_codes = [tree.__repr__() for tree in population]
+
+    include_pareto_models = []
+    include_pareto_fitnesses = []
+
+    for code, tree, fitness in zip(pareto_codes, population_pareto, fitnesses_pareto):
+        if code not in sorted_codes:
+            include_pareto_models.append(tree)
+            include_pareto_fitnesses.append(fitness)
+    
+    population = (include_pareto_models + population_sorted)[:n]
+    fitnesses = np.concatenate([np.array(include_pareto_fitnesses), fitnesses_sorted])[:n]
+
+    return population, fitnesses
+
 
 
 def regenerate_population(population, fitnesses, n):
@@ -85,8 +123,8 @@ def regenerate_population(population, fitnesses, n):
 def load_args():
 
     parser = ArgumentParser()
-    parser.add_argument("--input_path", default="./test_probs")
-    parser.add_argument("--gt_path", default="./test_y.pt")
+    parser.add_argument("--input_path", default="./train_probs")
+    parser.add_argument("--gt_path", default="./train_y.pt")
     parser.add_argument("--population_size", type=int, default=20)
     parser.add_argument("--population_multplier", type=int, default=1)
     parser.add_argument("--tournament_size", type=int, default=5)
@@ -115,6 +153,8 @@ if __name__ == "__main__":
     print("Starting evolution...")
 
     for i in range(30):
+
+        GLOBAL_ITERATION = i
 
         fitnesses = np.array([f1_score_fitness(tree, gt) for tree in population])
 
@@ -166,7 +206,7 @@ if __name__ == "__main__":
         # regenearte population
         population, fitnesses = regenerate_population(population, fitnesses, population_size)
 
-        population, fitnesses = choose_pareto_optimal(population, fitnesses)
+        population, fitnesses = choose_pareto_rest_sorted(population, fitnesses, population_size)
 
         print(F"Population size: {len(population)} after selection and before regeneration")
 
