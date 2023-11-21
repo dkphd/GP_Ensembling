@@ -64,10 +64,6 @@ def choose_pareto_optimal(population, fitnesses):
 
 
 def choose_sorted(population, fitnesses, n):
-    # sizes = np.array([tree.nodes_count for tree in population], dtype=('sizes', int)).reshape(-1, 1)
-    # fitnesses_neg = np.array(-fitnesses, dtype=('fitnesses_neg', float)).reshape(-1, 1)
-    # to_sort = np.stack([sizes, fitnesses_neg], axis=1)
-    # argsorted = np.argsort(to_sort, order=['fitnesses_neg', 'sizes'])
 
     sizes = np.array([tree.nodes_count for tree in population], dtype=int)
 
