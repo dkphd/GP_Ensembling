@@ -213,7 +213,9 @@ if __name__ == "__main__":
         print("Best fitness:")
 
         print(np.max(fitnesses))
-        dot = draw_tree(population[np.argmax(fitnesses)])
-        dot.render(f"trees/best_{i}", view=True, format='png')
+        
+        if DEBUG:
+            dot = draw_tree(population[np.argmax(fitnesses)])
+            dot.render(f"trees/best_{i}", view=True, format='png')
 
     print(fitnesses)
