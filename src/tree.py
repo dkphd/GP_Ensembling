@@ -2,10 +2,13 @@ from tinygrad.tensor import Tensor
 
 import numpy as np
 
+import torch
+
 import random
 
 from src.node import *
 from src.globals import DEBUG
+from src.utils import Pickle
 
 class Tree:
     def __init__(self, root: ValueNode, mutation_chance=0.1):
@@ -37,6 +40,7 @@ class Tree:
         tree = Tree(root, mutation_chance)
         return tree
 
+    @staticmethod
     def create_tree_from_root(root: Node, mutation_chance = 0.1):
         tree =  Tree(root, mutation_chance)
         tree.update_nodes()
@@ -151,6 +155,24 @@ class Tree:
             else:
                 self.nodes["op_nodes"].append(node)
 
+
+    def save_tree_architecture(self, output_path):
+
+        copy_tree = self.copy()
+        for index_node, node in enumerate(copy_tree.nodes["value_nodes"]):
+            node.value = node.evaluation = None
+        
+        Pickle.save(output_path, copy_tree)
+
+
+    @staticmethod
+    def load_tree(architecture_path, preds_directory):
+        loaded = Pickle.load(architecture_path)
+        for value_node in loaded.nodes["value_nodes"]:
+            node_id = value_node.id
+            value_tensor = torch.load(preds_directory / node_id)
+            value_node.value = Tensor(value_tensor.numpy())
+        return loaded
 
     def _clean_evals(self):
         for node in self.nodes["value_nodes"]:
