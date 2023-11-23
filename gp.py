@@ -119,8 +119,8 @@ def regenerate_population(population, fitnesses, n):
 def load_args():
 
     parser = ArgumentParser()
-    parser.add_argument("--input_path", default="./train_probs")
-    parser.add_argument("--gt_path", default="./train_y.pt")
+    parser.add_argument("--input_path", default="./additional_valid_probs")
+    parser.add_argument("--gt_path", default="./to_evolution/additional_valid_y.pt")
     parser.add_argument("--population_size", type=int, default=20)
     parser.add_argument("--population_multplier", type=int, default=1)
     parser.add_argument("--tournament_size", type=int, default=5)
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     
 
     ids = np.arange(population_size)
-    addional_population = []
+    additional_population = []
 
     print("Calculating fitnesses...")
 
@@ -154,7 +154,7 @@ if __name__ == "__main__":
 
         fitnesses = np.array([f1_score_fitness(tree, gt) for tree in population])
 
-        while len(addional_population) < len(population) * population_multplier:
+        while len(additional_population) < len(population) * population_multplier:
             idxs = np.random.choice(ids, tournament_size, replace=False)
             tournament_fitnesses = np.array(fitnesses)[idxs]
             parent_idxs = idxs[np.argsort(tournament_fitnesses)[-2:]]
@@ -171,7 +171,7 @@ if __name__ == "__main__":
             child2.update_nodes()
             child2._scan_nodes_for_lack_of_parent()
 
-            addional_population += [child1, child2]
+            additional_population += [child1, child2]
 
         print("Mutating...")
 
@@ -181,13 +181,13 @@ if __name__ == "__main__":
                 mutated_tree = append_new_node_mutation(tree, tensors, ids = paths)
                 mutated_tree.update_nodes()
                 mutated_tree._scan_nodes_for_lack_of_parent()
-                addional_population.append(mutated_tree)
+                additional_population.append(mutated_tree)
 
-        population += addional_population
-        additional_fitnesses = np.array([f1_score_fitness(tree, gt) for tree in addional_population])
+        population += additional_population
+        additional_fitnesses = np.array([f1_score_fitness(tree, gt) for tree in additional_population])
         fitnesses = np.concatenate([fitnesses, additional_fitnesses])
 
-        addional_population = []
+        additional_population = []
 
         # At this place we remove duplicates and regenerate the population
         population_codes = [tree.__repr__() for tree in population]
@@ -219,3 +219,4 @@ if __name__ == "__main__":
             dot.render(f"trees/best_{i}", view=True, format='png')
 
     print(fitnesses)
+    population[0].save_tree_architecture("./best_tree.tree")
