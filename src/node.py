@@ -245,7 +245,7 @@ class ValueNode(Node):
         return self.evaluation
 
     def __str__(self):
-        return f"ValueNode with value id: {hex(id(self.value))}"# and evaluation: {self.evaluation}"
+        return f"ValueNode with value at: {hex(id(self.value))}"# and evaluation: {self.evaluation}"
 
     def add_child(self, child_node):
         super().add_child(child_node)
