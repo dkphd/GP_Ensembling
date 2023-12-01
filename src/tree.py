@@ -168,10 +168,19 @@ class Tree:
     @staticmethod
     def load_tree(architecture_path, preds_directory):
         loaded = Pickle.load(architecture_path)
+        if DEBUG:
+            unique_ids = []
         for value_node in loaded.nodes["value_nodes"]:
             node_id = value_node.id
+            if DEBUG and node_id not in unique_ids:
+                unique_ids.append(node_id)
             value_tensor = torch.load(preds_directory / node_id)
             value_node.value = Tensor(value_tensor.numpy())
+        
+        if DEBUG:
+            print(f"Loaded tree has {len(unique_ids)} unique ids")
+            print(f"Loaded tree has {len(loaded.nodes['value_nodes'])} value nodes")
+                  
         return loaded
 
     def _clean_evals(self):
