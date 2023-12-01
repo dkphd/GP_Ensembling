@@ -19,7 +19,6 @@ def crossover(tree1: Tree, tree2: Tree, debug=False, mutation_chance_crossover=F
         node2 = tree2.get_random_node(node_types)
 
 
-
     replacement_node1 = node2.copy_subtree()
     replacement_node2 = node1.copy_subtree()
 
@@ -35,13 +34,6 @@ def crossover(tree1: Tree, tree2: Tree, debug=False, mutation_chance_crossover=F
         right_bound = np.clip(1.1*np.max(mut_chances), 0, 1)
         tree1.mutation_chance, tree2.mutation_chance = np.random.uniform(left_bound, right_bound, 2)
 
-
-    if debug:
-        if isinstance(node1, ValueNode):
-            print(f"Crossover performed at node with id {node1.id} and node with id {node2.id}")
-        else:
-            print(f"Crossover performed at node {node1} and node {node2}")
-
     return tree1, tree2
 
 
@@ -55,19 +47,14 @@ def append_new_node_mutation(tree: Tree, models, ids = None, debug=False):
 
     node = tree.get_random_node()
     if isinstance(node, ValueNode):
-        new_op = MeanNode(node, []) # TODO: randomize operator
+        new_op = np.random.choice([MeanNode, MaxNode, MinNode], 1)[0](node, [])
+        # new_op = MeanNode(node, []) # TODO: randomize operator
         new_val = ValueNode(new_op, [], models[idx_model], ids[idx_model])
         new_op.add_child(new_val)
         tree.append_after(node, new_op)
     else:
         new_val = ValueNode(None, [], models[idx_model], ids[idx_model])
         tree.append_after(node, new_val)
-
-    if debug:
-        if isinstance(node, ValueNode):
-            print(f"Append mutation performed at node with id {node.id}")
-        else:
-            print(f"Append mutation performed at node {node}")
 
     return tree
 
