@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
     print("Starting evolution...")
 
-    for i in range(30):
+    for i in range(50):
 
         GLOBAL_ITERATION = i
 
@@ -178,10 +178,17 @@ if __name__ == "__main__":
         #mutations
         for tree in population:
             if np.random.rand() < tree.mutation_chance:
-                mutated_tree = append_new_node_mutation(tree, tensors, ids = paths)
-                mutated_tree.update_nodes()
-                mutated_tree._scan_nodes_for_lack_of_parent()
-                additional_population.append(mutated_tree)
+                try:
+                    if np.random.rand() < 0.5:
+                        mutated_tree = append_new_node_mutation(tree, tensors, ids = paths)
+                    else:
+                        mutated_tree = lose_branch_mutation(tree)
+                    mutated_tree.update_nodes()
+                    mutated_tree._scan_nodes_for_lack_of_parent()
+                    additional_population.append(mutated_tree)
+                except Exception as e:
+                    print("Mutation failed due to: ", e)
+                    continue
 
         population += additional_population
         additional_fitnesses = np.array([f1_score_fitness(tree, gt) for tree in additional_population])

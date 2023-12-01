@@ -12,7 +12,7 @@ def load_args():
     parser = ArgumentParser()
     parser.add_argument('-t', '--tree_path', default="./best_tree.tree")
     parser.add_argument('-p', '--predictions_path', default="./test_probs")
-    parser.add_argument('-gt', '--ground_truth_path', default="./test_y.pt")
+    parser.add_argument('-gt', '--ground_truth_path', default="./to_evolution/test_y.pt")
 
     args = parser.parse_args()
 
