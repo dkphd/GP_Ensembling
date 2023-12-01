@@ -47,8 +47,8 @@ def append_new_node_mutation(tree: Tree, models, ids = None, debug=False):
 
     node = tree.get_random_node()
     if isinstance(node, ValueNode):
-        new_op = np.random.choice([MeanNode, MaxNode, MinNode], 1)[0](node, [])
-        # new_op = MeanNode(node, []) # TODO: randomize operator
+        # new_op = np.random.choice([MeanNode, MaxNode, MinNode], 1)[0](node, [])
+        new_op = MeanNode(node, []) # TODO: randomize operator
         new_val = ValueNode(new_op, [], models[idx_model], ids[idx_model])
         new_op.add_child(new_val)
         tree.append_after(node, new_op)
