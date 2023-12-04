@@ -4,8 +4,6 @@ import numpy as np
 
 import torch
 
-import random
-
 from src.node import *
 from src.globals import DEBUG
 from src.utils import Pickle
@@ -136,15 +134,15 @@ class Tree:
 
 
         if nodes_type is None:
-            nodes_type = random.choice(["value_nodes", "op_nodes"])
+            nodes_type = np.random.choice(["value_nodes", "op_nodes"])
 
         if not allow_root and nodes_type == "value_nodes":
             node = self.root
             while node == self.root:
-                node = random.choice(self.nodes[nodes_type])
+                node = np.random.choice(self.nodes[nodes_type])
             return node
         else:
-            return random.choice(self.nodes[nodes_type])
+            return np.random.choice(self.nodes[nodes_type])
 
 
     def update_nodes(self):

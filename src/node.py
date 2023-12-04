@@ -27,6 +27,7 @@ class Node(ABC):
         """
         self.children.append(child_node)
 
+
     def get_nodes(self):
         """
         Get all nodes in the tree created by node and it's subnodes.

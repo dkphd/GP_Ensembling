@@ -1,160 +1,44 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
-from src.tree import Tree
 from src.draw import draw_tree
 from src.gp_ops import *
-from src.globals import DEBUG, GLOBAL_ITERATION
+from src.globals import DEBUG, STATE
+from src.fitness import FitnessFunction, calculate_fitnesses
+from src.ops import *
+from src.loaders import load_torch_preds_from_directory
 
 from tinygrad.tensor import Tensor
 from torch import load
 
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from sklearn.metrics import f1_score
-
-from paretoset import paretoset
 
 np.random.seed(1992)
 
-def load_torch_to_tinygrad(input_path: Path):
-    paths = [path.name for path in input_path.glob("*.pt")]
-    tensors = [Tensor(load(input_path / path).numpy()) for path in paths]
-    return np.array(paths), tensors
-
-
-def f1_score_fitness(tree: Tree, gt: Tensor):
-    pred = tree.evaluation
-    pred = (pred > 0.5).float()
-    gt = gt.float()
-    return f1_score(gt.numpy(), pred.numpy()) 
-
-
-def binary_cross_entropy_loss(y_true, y_pred): 
-    loss = - (y_true * y_pred.log() + (1 - y_true) * (1-y_pred).log()).mean()
-    return loss
-
-
-def binary_cross_entropy_fitness(tree: Tree, gt: Tensor):
-    pred = tree.evaluation
-    gt = gt.float()
-    return -binary_cross_entropy_loss(gt, pred).numpy().item()
-
-
-
-FITNESS = binary_cross_entropy_fitness
-
-
-def first_uniques(arr):
-
-    mask = []
-    for index, item in enumerate(arr):
-        if item not in arr[:index]:
-            mask.append(True)
-        else:
-            mask.append(False)
-
-    return mask
-        
-
-def choose_pareto_optimal(population, fitnesses):
-    sizes = np.array([tree.nodes_count for tree in population])
-    df = pd.DataFrame({"fitness": fitnesses, "size": sizes})
-    mask = paretoset(df, sense=["max", "min"])
-    if DEBUG:
-        plt.figure(figsize=(6,6))
-        #draw selected pareto optimal points in red and the rest in blue
-        plt.scatter(df['size'][~mask], df.fitness[~mask], c="b", label="non-pareto-optimal")
-        plt.scatter(df['size'][mask], df.fitness[mask], c="r", label="pareto-optimal")
-        plt.legend()
-        plt.ylabel("fitness")
-        plt.xlabel("number of nodes")
-        plt.savefig(f'./pareto_plots/pareto_{GLOBAL_ITERATION}.png')
-
-    population = [population[idx] for idx in np.where(mask)[0]]
-    fitnesses = fitnesses[mask]
-    return population, fitnesses
-
-
-def choose_sorted(population, fitnesses, n):
-
-    sizes = np.array([tree.nodes_count for tree in population], dtype=int)
-
-    # Negate 'fitnesses' for descending order sorting
-    fitnesses_neg = -np.array(fitnesses, dtype=float)
-
-    # Create a structured array combining 'fitnesses_neg' and 'sizes'
-    combined = np.array(list(zip(fitnesses_neg, sizes)), dtype=[('fitnesses_neg', float), ('sizes', int)])
-
-    # Argsort the structured array based on 'fitnesses_neg' and 'sizes'
-    argsorted = np.argsort(combined, order=['fitnesses_neg', 'sizes'])
-
-    fitnesses = fitnesses[argsorted[:n]]
-
-    population = [population[idx] for idx in argsorted[:n]]
-    return population, fitnesses
-
-
-def choose_pareto_rest_sorted(population, fitnesses, n):
-    population_pareto, fitnesses_pareto = choose_pareto_optimal(population, fitnesses)
-    pareto_codes = [tree.__repr__() for tree in population]
-
-    population_sorted, fitnesses_sorted = choose_sorted(population, fitnesses, n)
-    sorted_codes = [tree.__repr__() for tree in population]
-
-    include_pareto_models = []
-    include_pareto_fitnesses = []
-
-    for code, tree, fitness in zip(pareto_codes, population_pareto, fitnesses_pareto):
-        if code not in sorted_codes:
-            include_pareto_models.append(tree)
-            include_pareto_fitnesses.append(fitness)
-    
-    population = (include_pareto_models + population_sorted)[:n]
-    fitnesses = np.concatenate([np.array(include_pareto_fitnesses), fitnesses_sorted])[:n]
-
-    return population, fitnesses
-
-
-def regenerate_population(population, fitnesses, n, tensors, gt, ids, population_codes = None):
-    if population_codes is None:
-        population_codes = [tree.__repr__() for tree in population]
-    while len(population) < n:
-        new_tree = Tree.create_tree_from_models(tensors, ids = ids)
-        code = new_tree.__repr__()
-        if code not in population_codes:
-            population.append(new_tree)
-            population_codes.append(code)
-            fitnesses = np.concatenate([fitnesses, [FITNESS(new_tree, gt)]])
-
-    return population, fitnesses
-        
-       
 def load_args():
 
     parser = ArgumentParser()
-    parser.add_argument("--input_path", default="./train_probs")
-    parser.add_argument("--gt_path", default="./train_y.pt")
+    parser.add_argument("--input_path", default="./additional_valid_probs")
+    parser.add_argument("--gt_path", default="./to_evolution/additional_valid_y.pt")
     parser.add_argument("--population_size", type=int, default=20)
     parser.add_argument("--population_multplier", type=int, default=1)
     parser.add_argument("--tournament_size", type=int, default=5)
+    parser.add_argument("--fitness_function", type=str, choices=list(FitnessFunction), default=FitnessFunction.F1_SCORE)
     args = parser.parse_args()
 
-    return Path(args.input_path), Path(args.gt_path), args.population_size, args.population_multplier, args.tournament_size
+    return Path(args.input_path), Path(args.gt_path), args.population_size, args.population_multplier, args.tournament_size, args.fitness_function
 
 if __name__ == "__main__":
     
-    in_path, gt_path, population_size, population_multplier, tournament_size = load_args()
+    in_path, gt_path, population_size, population_multplier, tournament_size, fitness_function = load_args()
 
-    paths, tensors = load_torch_to_tinygrad(in_path)
+    paths, tensors = load_torch_preds_from_directory(in_path)
 
     gt = Tensor(load(gt_path).numpy())
 
     print("Generating population...")
 
-    population, _ = regenerate_population([], [], population_size, tensors, gt, paths, population_codes = None)
+    population, _ = regenerate_population([], [], population_size, tensors, gt, paths, fitness_function, population_codes = None)
 
     ids = np.arange(population_size)
     additional_population = []
@@ -165,9 +49,9 @@ if __name__ == "__main__":
 
     for i in range(50):
 
-        GLOBAL_ITERATION = i
+        STATE['GLOBAL_ITERATION'] = i
 
-        fitnesses = np.array([FITNESS(tree, gt) for tree in population])
+        fitnesses = calculate_fitnesses(population, gt, fitness_function)
 
         while len(additional_population) < len(population) * population_multplier:
             idxs = np.random.choice(ids, tournament_size, replace=False)
@@ -182,33 +66,16 @@ if __name__ == "__main__":
                 continue
 
             child1.update_nodes()
-            child1._scan_nodes_for_lack_of_parent()
             child2.update_nodes()
-            child2._scan_nodes_for_lack_of_parent()
 
             additional_population += [child1, child2]
 
         print("Mutating...")
 
         #mutations
-        for tree in population:
-            if np.random.rand() < tree.mutation_chance:
-                try:
-                    if np.random.rand() < 0.5:
-                        mutated_tree = append_new_node_mutation(tree, tensors, ids = paths)
-                    else:
-                        mutated_tree = lose_branch_mutation(tree)
-                    mutated_tree.update_nodes()
-                    mutated_tree._scan_nodes_for_lack_of_parent()
-                    additional_population.append(mutated_tree)
-                except Exception as e:
-                    print("Mutation failed due to: ", e)
-                    continue
+        additional_population += mutate_population(additional_population, tensors, paths)
 
-        population += additional_population
-        additional_fitnesses = np.array([FITNESS(tree, gt) for tree in additional_population])
-        fitnesses = np.concatenate([fitnesses, additional_fitnesses])
-
+        population, fitnesses = join_populations(population, fitnesses, additional_population, gt, fitness_function)
         additional_population = []
 
         # At this place we remove duplicates and regenerate the population
@@ -230,7 +97,7 @@ if __name__ == "__main__":
         
         if DEBUG:
             dot = draw_tree(population[np.argmax(fitnesses)])
-            dot.render(f"trees/best_{i}", format='png')
+            dot.render(f"trees/best_{STATE['GLOBAL_ITERATION']}", format='png')
 
     print(fitnesses)
     population[0].save_tree_architecture("./best_tree.tree")

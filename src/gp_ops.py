@@ -37,7 +37,9 @@ def crossover(tree1: Tree, tree2: Tree, debug=False, mutation_chance_crossover=F
     return tree1, tree2
 
 
-def append_new_node_mutation(tree: Tree, models, ids = None, debug=False):
+# Mutations
+
+def append_new_node_mutation(tree: Tree, models, ids = None, **kwargs):
     tree = tree.copy()
 
     if ids is None:
@@ -47,8 +49,8 @@ def append_new_node_mutation(tree: Tree, models, ids = None, debug=False):
 
     node = tree.get_random_node()
     if isinstance(node, ValueNode):
-        # new_op = np.random.choice([MeanNode, MaxNode, MinNode], 1)[0](node, [])
-        new_op = MeanNode(node, []) # TODO: randomize operator
+        new_op = np.random.choice([MeanNode, MaxNode, MinNode], 1)[0](node, [])
+        # new_op = MeanNode(node, []) # TODO: randomize operator
         new_val = ValueNode(new_op, [], models[idx_model], ids[idx_model])
         new_op.add_child(new_val)
         tree.append_after(node, new_op)
@@ -58,10 +60,67 @@ def append_new_node_mutation(tree: Tree, models, ids = None, debug=False):
 
     return tree
 
-def lose_branch_mutation(tree: Tree):
+def lose_branch_mutation(tree: Tree, **kwargs):
 
     tree = tree.copy()
     node = tree.get_random_node(allow_root=False)
     tree.prune_at(node)
 
     return tree
+
+
+MUTATION_FUNCTIONS = [append_new_node_mutation, lose_branch_mutation]
+
+
+def mutate_population(population, tensors, ids):
+    mutated_trees = []
+    for tree in population:
+        if np.random.rand() < tree.mutation_chance:
+            try:
+                mutation_function = np.random.choice(MUTATION_FUNCTIONS, 1)[0]
+                mutated_tree = mutation_function(tree, models = tensors, ids = ids)
+                mutated_tree.update_nodes()
+                mutated_trees.append(mutated_tree)
+            except Exception as e:
+                print("Mutation failed due to: ", e)
+                continue
+
+    return mutated_trees
+
+###
+
+
+def regenerate_population(population, fitnesses, n, tensors, gt, ids, fitness_function, population_codes = None):
+    """
+    Regenerate a population of Tree objects until it reaches a specified size.
+
+    This function iteratively generates new Tree objects based on provided tensors and ids. 
+    It ensures that each new Tree is unique within the current population by checking its code representation 
+    against existing ones. The fitness of each new Tree is evaluated using the provided fitness function 
+    and appended to the fitnesses list. The population is grown until it reaches the specified size n.
+
+    Parameters:
+    - population (list): A list of Tree objects representing the current population.
+    - fitnesses (np.ndarray): An array of fitness values corresponding to each Tree in the population.
+    - n (int): The desired population size.
+    - tensors (list/tuple): Data structure containing tensors used to generate new Tree objects.
+    - gt: Ground truth data against which the fitness of each Tree is evaluated.
+    - ids (list/tuple): Identifiers used in the creation of new Tree objects.
+    - fitness_function (function): A function that takes a Tree object and the ground truth data,
+                                   and returns a fitness score.
+    - population_codes (list, optional): A list of string representations of the Trees in the population. 
+                                         If None, it's generated from the current population.
+
+    """                                     
+    
+    if population_codes is None:
+        population_codes = [tree.__repr__() for tree in population]
+    while len(population) < n:
+        new_tree = Tree.create_tree_from_models(tensors, ids = ids)
+        code = new_tree.__repr__()
+        if code not in population_codes:
+            population.append(new_tree)
+            population_codes.append(code)
+            fitnesses = np.concatenate([fitnesses, [fitness_function(new_tree, gt)]])
+
+    return population, fitnesses

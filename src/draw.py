@@ -36,7 +36,7 @@ def draw_tree(to_draw: Union[Tree, Node], dot=None):
             display_string,
         )
     else:
-        dot.node(f"{hex(id(node))}", f"Op\n{node.operator}")
+        dot.node(f"{hex(id(node))}", f"Op\n{type(node).__name__}")
 
     for child in node.children:
         draw_tree(child, dot)
