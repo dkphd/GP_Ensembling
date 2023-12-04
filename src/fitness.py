@@ -4,7 +4,7 @@ from tinygrad.tensor import Tensor
 import numpy as np
 from sklearn.metrics import f1_score
 
-from enum import Enum
+from enum import Enum, member
 
 
 def f1_score_fitness(tree: Tree, gt: Tensor):
@@ -27,8 +27,8 @@ def binary_cross_entropy_fitness(tree: Tree, gt: Tensor):
 
 
 class FitnessFunction(Enum):
-    F1_SCORE = f1_score_fitness
-    BINARY_CROSS_ENTROPY = binary_cross_entropy_fitness
+    F1_SCORE = member(f1_score_fitness)
+    BINARY_CROSS_ENTROPY = member(binary_cross_entropy_fitness)
 
     def __str__(self):
         return self.name

@@ -1,5 +1,6 @@
 from src.tree import Tree
 from src.node import *
+from src.globals import DEBUG
 
 from copy import deepcopy
 
@@ -63,7 +64,7 @@ def append_new_node_mutation(tree: Tree, models, ids = None, **kwargs):
 def lose_branch_mutation(tree: Tree, **kwargs):
 
     tree = tree.copy()
-    node = tree.get_random_node(allow_root=False)
+    node = tree.get_random_node(allow_root=False, allow_leaves=False)
     tree.prune_at(node)
 
     return tree
@@ -82,7 +83,8 @@ def mutate_population(population, tensors, ids):
                 mutated_tree.update_nodes()
                 mutated_trees.append(mutated_tree)
             except Exception as e:
-                print("Mutation failed due to: ", e)
+                if DEBUG > 2:
+                    print("Mutation failed due to: ", e)
                 continue
 
     return mutated_trees

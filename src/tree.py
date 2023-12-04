@@ -120,7 +120,7 @@ class Tree:
 
         self._clean_evals()
 
-    def get_random_node(self, nodes_type: str = None, allow_root=True):
+    def get_random_node(self, nodes_type: str = None, allow_root=True, allow_leaves=True):
 
         if self.root.children == []:
             if allow_root:
@@ -136,13 +136,12 @@ class Tree:
         if nodes_type is None:
             nodes_type = np.random.choice(["value_nodes", "op_nodes"])
 
-        if not allow_root and nodes_type == "value_nodes":
-            node = self.root
-            while node == self.root:
-                node = np.random.choice(self.nodes[nodes_type])
-            return node
-        else:
-            return np.random.choice(self.nodes[nodes_type])
+        order = np.arange(len(self.nodes[nodes_type]))
+        for i in order:
+            node = self.nodes[nodes_type][i]
+            if (allow_leaves or node.children != []) and (allow_root or node != self.root):
+                return node
+        raise Exception("No node found that complies to constraints")
 
 
     def update_nodes(self):
