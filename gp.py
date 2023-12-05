@@ -22,14 +22,15 @@ def load_args():
     parser.add_argument("--population_multiplier", type=int, default=1)
     parser.add_argument("--tournament_size", type=int, default=5)
     parser.add_argument("--fitness_function", type=lambda func: FitnessFunction[func].value, choices=list(FitnessFunction), default="F1_SCORE")
+    parser.add_argument("--allow_all_ops", action="store_true")
     parser.add_argument("--seed", type=int, default=10)
     parser.add_argument("--tree_out_path", type=str, default="./best_tree.tree")
     args = parser.parse_args()
 
-    return Path(args.input_path), Path(args.gt_path), args.population_size, args.population_multiplier, args.tournament_size, args.fitness_function, args.seed, args.tree_out_path
+    return Path(args.input_path), Path(args.gt_path), args.population_size, args.population_multiplier, args.tournament_size, args.fitness_function, args.allow_all_ops, args.seed, args.tree_out_path
 
 
-def main(input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, seed, tree_out_path):
+def main(input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, allow_all_ops, seed, tree_out_path):
 
     np.random.seed(seed)
 
@@ -38,8 +39,6 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
     gt = Tensor(load(gt_path).numpy())
 
     print("Generating population...")
-
-    print(fitness_function)
 
     population, _ = regenerate_population([], [], population_size, tensors, gt, paths, fitness_function, population_codes = None)
 
@@ -79,7 +78,7 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
             print("Mutating...")
 
         #mutations
-        additional_population += mutate_population(additional_population, tensors, paths)
+        additional_population += mutate_population(additional_population, tensors, paths, allow_all_ops=allow_all_ops)
 
         population, fitnesses = join_populations(population, fitnesses, additional_population, gt, fitness_function)
         additional_population = []
@@ -111,10 +110,11 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
 
     print(fitnesses)
     population[0].save_tree_architecture(tree_out_path)
+    return population[0]
 
 
 if __name__ == "__main__":
     
-    input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, seed, tree_out_path = load_args()
+    input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, allow_all_ops, seed, tree_out_path = load_args()
 
-    main(input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, seed, tree_out_path)
+    main(input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, allow_all_ops, seed, tree_out_path)

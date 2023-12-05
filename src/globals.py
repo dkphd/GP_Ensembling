@@ -1,6 +1,6 @@
 import os
 
-DEBUG = os.environ.get('DEBUG', False)
+DEBUG = int(os.environ.get('DEBUG', 0))
 
 
 STATE = {
