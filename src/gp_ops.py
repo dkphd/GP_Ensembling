@@ -40,7 +40,7 @@ def crossover(tree1: Tree, tree2: Tree, debug=False, mutation_chance_crossover=F
 
 # Mutations
 
-def append_new_node_mutation(tree: Tree, models, ids = None, **kwargs):
+def append_new_node_mutation(tree: Tree, models, ids = None, allow_all_ops = False, **kwargs):
     tree = tree.copy()
 
     if ids is None:
@@ -50,8 +50,10 @@ def append_new_node_mutation(tree: Tree, models, ids = None, **kwargs):
 
     node = tree.get_random_node()
     if isinstance(node, ValueNode):
-        new_op = np.random.choice([MeanNode, MaxNode, MinNode], 1)[0](node, [])
-        # new_op = MeanNode(node, []) # TODO: randomize operator
+        if allow_all_ops:
+            new_op = np.random.choice([MeanNode, MaxNode, MinNode], 1)[0](node, [])
+        else:
+            new_op = MeanNode(node, [])
         new_val = ValueNode(new_op, [], models[idx_model], ids[idx_model])
         new_op.add_child(new_val)
         tree.append_after(node, new_op)
@@ -73,13 +75,13 @@ def lose_branch_mutation(tree: Tree, **kwargs):
 MUTATION_FUNCTIONS = [append_new_node_mutation, lose_branch_mutation]
 
 
-def mutate_population(population, tensors, ids):
+def mutate_population(population, tensors, ids, allow_all_ops=False):
     mutated_trees = []
     for tree in population:
         if np.random.rand() < tree.mutation_chance:
             try:
                 mutation_function = np.random.choice(MUTATION_FUNCTIONS, 1)[0]
-                mutated_tree = mutation_function(tree, models = tensors, ids = ids)
+                mutated_tree = mutation_function(tree, models = tensors, ids = ids, allow_all_ops=allow_all_ops)
                 mutated_tree.update_nodes()
                 mutated_trees.append(mutated_tree)
             except Exception as e:
