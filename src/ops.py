@@ -64,10 +64,10 @@ def choose_sorted(population, fitnesses, n):
 
 def choose_pareto_rest_sorted(population, fitnesses, n):
     population_pareto, fitnesses_pareto = choose_pareto_optimal(population, fitnesses)
-    pareto_codes = [tree.__repr__() for tree in population]
+    pareto_codes = [tree.__repr__() for tree in population_pareto]
 
     population_sorted, fitnesses_sorted = choose_sorted(population, fitnesses, n)
-    sorted_codes = [tree.__repr__() for tree in population]
+    sorted_codes = [tree.__repr__() for tree in population_sorted]
 
     include_pareto_models = []
     include_pareto_fitnesses = []
