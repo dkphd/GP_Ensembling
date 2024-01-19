@@ -21,12 +21,11 @@ def average_precision_fitness(tree: Tree, gt: Tensor):
 
 
 def binary_cross_entropy_loss(y_true, y_pred, epsilon=1e-15):
-    y_pred_safe = epsilon + (1 - 2 * epsilon) * y_pred
 
-    loss = - (y_true * y_pred_safe.log() + (1 - y_true) * (1 - y_pred_safe).log()).mean()
-    return loss
-
-
+    y_pred = y_pred.clip(epsilon, 1 - epsilon)
+    term_0 = (1 - y_true) * (1 - y_pred + epsilon).log()
+    term_1 = y_true * (y_pred + epsilon).log()
+    return -(term_0 + term_1).mean(axis=0)
 
 def binary_cross_entropy_fitness(tree: Tree, gt: Tensor):
     pred = tree.evaluation

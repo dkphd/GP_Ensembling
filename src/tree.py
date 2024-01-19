@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from src.node import *
-from src.globals import DEBUG
+from src.globals import VERBOSE
 from src.utils import Pickle
 
 class Tree:
@@ -100,7 +100,7 @@ class Tree:
         at_parent = at.parent
         
         if at_parent is None:
-            if DEBUG:
+            if VERBOSE:
                 print("Warning: node at replacement is root node")
             self.root = replacement
             if isinstance(self.root, OperatorNode):
@@ -165,16 +165,16 @@ class Tree:
     @staticmethod
     def load_tree(architecture_path, preds_directory):
         loaded = Pickle.load(architecture_path)
-        if DEBUG:
+        if VERBOSE:
             unique_ids = []
         for value_node in loaded.nodes["value_nodes"]:
             node_id = value_node.id
-            if DEBUG and node_id not in unique_ids:
+            if VERBOSE and node_id not in unique_ids:
                 unique_ids.append(node_id)
             value_tensor = torch.load(preds_directory / node_id)
             value_node.value = Tensor(value_tensor.numpy())
         
-        if DEBUG:
+        if VERBOSE:
             print(f"Loaded tree has {len(unique_ids)} unique ids")
             print(f"Loaded tree has {len(loaded.nodes['value_nodes'])} value nodes")
                   

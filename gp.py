@@ -3,7 +3,7 @@ from pathlib import Path
 
 from src.draw import draw_tree
 from src.gp_ops import *
-from src.globals import DEBUG, STATE
+from src.globals import VERBOSE, STATE
 from src.fitness import FitnessFunction, calculate_fitnesses
 from src.ops import *
 from src.loaders import load_torch_preds_from_directory
@@ -36,7 +36,7 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
 
     paths, tensors = load_torch_preds_from_directory(input_path)
 
-    if DEBUG:
+    if VERBOSE:
         print(f"Loaded {len(tensors)} models")
 
     gt = Tensor(load(gt_path).numpy())
@@ -65,9 +65,9 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
             parent1, parent2 = population[parent_idxs[0]], population[parent_idxs[1]]
 
             try:
-                child1, child2 = crossover(parent1, parent2, mutation_chance_crossover=False, debug=DEBUG)
+                child1, child2 = crossover(parent1, parent2, mutation_chance_crossover=False, VERBOSE=VERBOSE)
             except Exception as e:
-                if DEBUG:
+                if VERBOSE:
                     print("Crossover failed due to: ", e)
                 continue
 
@@ -77,7 +77,7 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
             additional_population += [child1, child2]
 
 
-        if DEBUG > 1:
+        if VERBOSE > 1:
             print("Mutating...")
 
         #mutations
@@ -91,23 +91,23 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
         unique_codes = first_uniques(population_codes)
 
 
-        if DEBUG > 1:
+        if VERBOSE > 1:
             print("Removing duplicates...")
             print(f"There are {len(population_codes) - sum(unique_codes)} duplicates in population")    
 
         population = [tree for tree, unique in zip(population, unique_codes) if unique]
         fitnesses = fitnesses[unique_codes]
 
-        if DEBUG > 1:
+        if VERBOSE > 1:
             print("There are {} unique trees in population".format(len(population)))
 
         population, fitnesses = choose_pareto_rest_sorted(population, fitnesses, population_size)
 
-        if DEBUG > 1:
+        if VERBOSE > 1:
             print("Best fitness:")
             print(np.max(fitnesses))
         
-        if DEBUG > 1:
+        if VERBOSE > 1:
             dot = draw_tree(population[np.argmax(fitnesses)])
             dot.render(f"trees/best_{STATE['GLOBAL_ITERATION']}", format='png')
 

@@ -1,6 +1,6 @@
 import os
 
-DEBUG = int(os.environ.get('DEBUG', 0))
+VERBOSE = int(os.environ.get('VERBOSE', 0))
 
 
 STATE = {

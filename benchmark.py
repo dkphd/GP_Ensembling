@@ -1,29 +1,10 @@
-from pathlib import Path
 from gp import main
-from src.fitness import FitnessFunction, f1_score_fitness, binary_cross_entropy_fitness
-from functools import partial
-from gems.dask_utils.local_runner import LocalRunner
-from gems.io import Json
-from dask.distributed import wait
-import os
+from src.fitness import FitnessFunction
 from tqdm import tqdm
-import pandas as pd
-from torch import load
-
-
-from src.tree import Tree
-
 from pathlib import Path
-
-from torch import load
-
-from sklearn.metrics import roc_auc_score, f1_score, precision_recall_curve, average_precision_score
-import numpy as np
 
 with open(Path('./seeds.txt'), 'r') as f:
     seeds = list(map(int, f.read().splitlines()))
-
-
 
 default_params = {
     "input_path": "./additional_valid_probs",

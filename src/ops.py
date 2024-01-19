@@ -6,7 +6,7 @@ from paretoset import paretoset
 from src.tree import Tree
 from src.node import *
 
-from src.globals import DEBUG, STATE
+from src.globals import VERBOSE, STATE
 from src.fitness import calculate_fitnesses
 
 from pathlib import Path
@@ -34,7 +34,7 @@ def choose_pareto_optimal(population, fitnesses):
     df = pd.DataFrame({"fitness": fitnesses, "size": sizes})
     mask = paretoset(df, sense=["max", "min"])
     df['mask'] = mask
-    if DEBUG:
+    if VERBOSE:
         fig, ax = plt.subplots(figsize=(8, 4))
 
         # Load your custom font
