@@ -7,7 +7,7 @@ import numpy as np
 
 from typing import Union
 
-def draw_tree(to_draw: Union[Tree, Node], dot=None):
+def draw_tree(to_draw: Union[Tree, Node], dot=None, add_val_eval=True):
 
     if isinstance(to_draw, Tree):
         node = to_draw.root
@@ -27,9 +27,12 @@ def draw_tree(to_draw: Union[Tree, Node], dot=None):
             evaluation = None
 
         display_string = f"Value Node\n"
+        
         if node.id is not None:
             display_string += f"Model ID: {node.id}\n"
-        display_string += f"Value: {value} | Eval: {evaluation}"
+
+        if add_val_eval:
+            display_string += f"Value: {value} | Eval: {evaluation}"
 
         dot.node(
             f"{hex(id(node))}",
@@ -39,7 +42,7 @@ def draw_tree(to_draw: Union[Tree, Node], dot=None):
         dot.node(f"{hex(id(node))}", f"Op\n{type(node).__name__}")
 
     for child in node.children:
-        draw_tree(child, dot)
+        draw_tree(child, dot, add_val_eval)
         dot.edge(f"{hex(id(node))}", f"{hex(id(child))}")
 
     return dot

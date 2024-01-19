@@ -9,6 +9,11 @@ from src.node import *
 from src.globals import DEBUG, STATE
 from src.fitness import calculate_fitnesses
 
+from pathlib import Path
+import matplotlib as mpl
+
+from matplotlib import rcParams
+from matplotlib.font_manager import FontProperties
 
 
 def first_uniques(arr):
@@ -28,15 +33,24 @@ def choose_pareto_optimal(population, fitnesses):
     sizes = np.array([tree.nodes_count for tree in population])
     df = pd.DataFrame({"fitness": fitnesses, "size": sizes})
     mask = paretoset(df, sense=["max", "min"])
+    df['mask'] = mask
     if DEBUG:
-        plt.figure(figsize=(6,6))
-        #draw selected pareto optimal points in red and the rest in blue
-        plt.scatter(df['size'][~mask], df.fitness[~mask], c="b", label="non-pareto-optimal")
-        plt.scatter(df['size'][mask], df.fitness[mask], c="r", label="pareto-optimal")
-        plt.legend()
-        plt.ylabel("fitness")
-        plt.xlabel("number of nodes")
-        plt.savefig(f'./pareto_plots/pareto_{STATE["GLOBAL_ITERATION"]}.png')
+        fig, ax = plt.subplots(figsize=(8, 4))
+
+        # Load your custom font
+        fpath = Path(mpl.get_data_path(), "fonts/ttf/times.ttf")
+        prop = FontProperties(fname=fpath)
+
+        # Apply the font globally
+        mpl.rcParams['font.family'] = prop.get_name()
+
+        ax.scatter(df['size'][~mask], df.fitness[~mask], c="black")
+        ax.scatter(df['size'][mask], df.fitness[mask], c="#62b879")
+        ax.set_xlabel("Times New Roman")
+        # plt.legend()
+
+        fig.savefig(f'./pareto_plots/pareto_{STATE["GLOBAL_ITERATION"]}.png')
+        df.to_csv(f'./pareto_plots/pareto_{STATE["GLOBAL_ITERATION"]}.csv', index=False)
 
     population = [population[idx] for idx in np.where(mask)[0]]
     fitnesses = fitnesses[mask]

@@ -21,7 +21,7 @@ def load_args():
     parser.add_argument("--population_size", type=int, default=20)
     parser.add_argument("--population_multiplier", type=int, default=1)
     parser.add_argument("--tournament_size", type=int, default=5)
-    parser.add_argument("--fitness_function", type=lambda func: FitnessFunction[func].value, choices=list(FitnessFunction), default="F1_SCORE")
+    parser.add_argument("--fitness_function", type=lambda func: FitnessFunction[func].value, choices=list(FitnessFunction), default="AVERAGE_PRECISION")
     parser.add_argument("--allow_all_ops", action="store_true")
     parser.add_argument("--seed", type=int, default=10)
     parser.add_argument("--tree_out_path", type=str, default="./best_tree.tree")
@@ -35,6 +35,9 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
     np.random.seed(seed)
 
     paths, tensors = load_torch_preds_from_directory(input_path)
+
+    if DEBUG:
+        print(f"Loaded {len(tensors)} models")
 
     gt = Tensor(load(gt_path).numpy())
 
@@ -52,7 +55,7 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
     for i in range(50):
 
         STATE['GLOBAL_ITERATION'] = i
-
+            
         fitnesses = calculate_fitnesses(population, gt, fitness_function)
 
         while len(additional_population) < len(population) * population_multiplier:
@@ -108,8 +111,14 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
             dot = draw_tree(population[np.argmax(fitnesses)])
             dot.render(f"trees/best_{STATE['GLOBAL_ITERATION']}", format='png')
 
+    
+    pareto_optimal_trees, pareto_optimal_fitnesses = choose_pareto_optimal(population, fitnesses)
     print(fitnesses)
-    population[0].save_tree_architecture(tree_out_path)
+    print(pareto_optimal_fitnesses)
+
+    for index, tree in enumerate(pareto_optimal_trees):
+        tree.save_tree_architecture(str(tree_out_path)[:-5] + f"_{index}.tree")
+
     return population[0]
 
 
