@@ -2,14 +2,15 @@ from src.tree import Tree
 from tinygrad.tensor import Tensor
 
 import numpy as np
-from sklearn.metrics import f1_score, average_precision_score
+from sklearn.metrics import f1_score, average_precision_score, precision_recall_curve
 
 from enum import Enum, member
 
 
-def f1_score_fitness(tree: Tree, gt: Tensor):
+
+def f1_score_fitness(tree: Tree, gt: Tensor, threshold=0.5):
     pred = tree.evaluation
-    pred = (pred > 0.5).float()
+    pred = (pred > threshold).float()
     gt = gt.float()
     return f1_score(gt.numpy(), pred.numpy()) 
 
@@ -41,7 +42,23 @@ class FitnessFunction(Enum):
 
     def __str__(self):
         return self.name
-    
+
+
+def find_distance_optimal_threshold(tree: Tree, gt: Tensor):
+    pred = tree.evaluation
+    gt = gt.float()
+
+    precision, recall, thresholds = precision_recall_curve(gt.numpy(), pred.numpy())
+    fscores = (2 * precision * recall) / (precision + recall)
+
+    ix = np.argmax(fscores)
+    return thresholds[ix]
+
+
+def distance_optimal_f1_score_fitness(tree: Tree, gt: Tensor):
+    threshold = find_distance_optimal_threshold(tree, gt)
+    return f1_score_fitness(tree, gt, threshold)
+
 
 def calculate_fitnesses(population, gt, fitness_function):
     return np.array([fitness_function(tree, gt) for tree in population])

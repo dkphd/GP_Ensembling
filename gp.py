@@ -4,7 +4,7 @@ from pathlib import Path
 from src.draw import draw_tree
 from src.gp_ops import *
 from src.globals import VERBOSE, STATE
-from src.fitness import FitnessFunction, calculate_fitnesses
+from src.fitness import FitnessFunction, calculate_fitnesses, distance_optimal_f1_score_fitness
 from src.ops import *
 from src.loaders import load_torch_preds_from_directory
 
@@ -16,23 +16,37 @@ import numpy as np
 def load_args():
 
     parser = ArgumentParser()
-    parser.add_argument("--input_path", default="./additional_valid_probs")
-    parser.add_argument("--gt_path", default="./to_evolution/additional_valid_y.pt")
+    parser.add_argument("--input_path", default="./valid_probs")
+    parser.add_argument("--gt_path", default="./gt/valid_labels.pt")
     parser.add_argument("--population_size", type=int, default=20)
     parser.add_argument("--population_multiplier", type=int, default=1)
     parser.add_argument("--tournament_size", type=int, default=5)
     parser.add_argument("--fitness_function", type=lambda func: FitnessFunction[func].value, choices=list(FitnessFunction), default="AVERAGE_PRECISION")
     parser.add_argument("--allow_all_ops", action="store_true")
+    parser.add_argument("--use_distance_optimal_threshold", action="store_true")
+    parser.add_argument("--mutation_chance_crossover", action="store_true")
     parser.add_argument("--seed", type=int, default=10)
     parser.add_argument("--tree_out_path", type=str, default="./best_tree.tree")
     args = parser.parse_args()
 
-    return Path(args.input_path), Path(args.gt_path), args.population_size, args.population_multiplier, args.tournament_size, args.fitness_function, args.allow_all_ops, args.seed, args.tree_out_path
+    return Path(args.input_path), Path(args.gt_path), args.population_size,\
+          args.population_multiplier, args.tournament_size, args.fitness_function,\
+              args.allow_all_ops, args.use_distance_optimal_threshold, args.mutation_chance_crossover, \
+                args.seed, args.tree_out_path,\
+              
 
 
-def main(input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, allow_all_ops, seed, tree_out_path):
+def main(input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, allow_all_ops,
+         use_distance_optimal_threshold, mutation_chance_crossover, seed, tree_out_path):
+
+
+    if (fitness_function is FitnessFunction.F1_SCORE) and use_distance_optimal_threshold:
+        fitness_function = distance_optimal_f1_score_fitness
 
     np.random.seed(seed)
+
+    PATIENCE = 5
+    CUR_PATIENCE = 0
 
     paths, tensors = load_torch_preds_from_directory(input_path)
 
@@ -43,7 +57,7 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
 
     print("Generating population...")
 
-    population, _ = regenerate_population([], [], population_size, tensors, gt, paths, fitness_function, population_codes = None)
+    population, CUR_FITNESS_ACCUMULATOR = regenerate_population([], [], population_size, tensors, gt, paths, fitness_function, population_codes = None)
 
     ids = np.arange(population_size)
     additional_population = []
@@ -52,7 +66,7 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
 
     print("Starting evolution...")
 
-    for i in range(50):
+    for i in range(300):
 
         STATE['GLOBAL_ITERATION'] = i
             
@@ -65,7 +79,7 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
             parent1, parent2 = population[parent_idxs[0]], population[parent_idxs[1]]
 
             try:
-                child1, child2 = crossover(parent1, parent2, mutation_chance_crossover=False, VERBOSE=VERBOSE)
+                child1, child2 = crossover(parent1, parent2, mutation_chance_crossover=mutation_chance_crossover, verbose=VERBOSE)
             except Exception as e:
                 if VERBOSE:
                     print("Crossover failed due to: ", e)
@@ -103,7 +117,7 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
 
         population, fitnesses = choose_pareto_rest_sorted(population, fitnesses, population_size)
 
-        if VERBOSE > 1:
+        if VERBOSE >= 1:
             print("Best fitness:")
             print(np.max(fitnesses))
         
@@ -111,10 +125,28 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
             dot = draw_tree(population[np.argmax(fitnesses)])
             dot.render(f"trees/best_{STATE['GLOBAL_ITERATION']}", format='png')
 
+        if np.allclose(fitnesses, CUR_FITNESS_ACCUMULATOR):
+            CUR_PATIENCE += 1
+        else:
+            CUR_PATIENCE = 0
+            CUR_FITNESS_ACCUMULATOR = fitnesses
+
+
+        if VERBOSE > 1:
+            print("PATIENCE_LEVEL: ", CUR_PATIENCE)
+            # print(f"Accumulated fitnesses: {CUR_FITNESS_ACCUMULATOR}")
+            # print(f"Current fitnesses: {fitnesses}")
+
+        if CUR_PATIENCE >= PATIENCE:
+            print("Patience reached, stopping evolution...")
+            break
+
     
     pareto_optimal_trees, pareto_optimal_fitnesses = choose_pareto_optimal(population, fitnesses)
     print(fitnesses)
     print(pareto_optimal_fitnesses)
+
+
 
     for index, tree in enumerate(pareto_optimal_trees):
         tree.save_tree_architecture(str(tree_out_path)[:-5] + f"_{index}.tree")
@@ -124,6 +156,10 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
 
 if __name__ == "__main__":
     
-    input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, allow_all_ops, seed, tree_out_path = load_args()
+    input_path, gt_path, population_size, population_multiplier, tournament_size,\
+          fitness_function, allow_all_ops, use_distance_optimal_threshold,\
+              mutation_chance_crossover, seed, tree_out_path = load_args()
 
-    main(input_path, gt_path, population_size, population_multiplier, tournament_size, fitness_function, allow_all_ops, seed, tree_out_path)
+    main(input_path, gt_path, population_size, population_multiplier, tournament_size,
+          fitness_function, allow_all_ops, use_distance_optimal_threshold,
+            mutation_chance_crossover, seed, tree_out_path)
