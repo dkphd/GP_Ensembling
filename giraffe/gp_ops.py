@@ -1,6 +1,6 @@
-from src.tree import Tree
-from src.node import *
-from src.globals import VERBOSE
+from giraffe.tree import Tree
+from giraffe.node import *
+from giraffe.globals import VERBOSE
 
 from copy import deepcopy
 

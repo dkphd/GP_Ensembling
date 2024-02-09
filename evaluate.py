@@ -1,12 +1,12 @@
 from argparse import ArgumentParser
-from src.tree import Tree
+from giraffe.tree import Tree
 
 from pathlib import Path
 
 from torch import load
 
 from sklearn.metrics import average_precision_score, f1_score, confusion_matrix
-from src.fitness import find_distance_optimal_threshold
+from giraffe.fitness import find_distance_optimal_threshold
 from tinygrad.tensor import Tensor
 
 def load_args():

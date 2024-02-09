@@ -1,4 +1,4 @@
-from src.tree import Tree
+from giraffe.tree import Tree
 from tinygrad.tensor import Tensor
 
 import numpy as np

@@ -1,12 +1,12 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
-from src.draw import draw_tree
-from src.gp_ops import *
-from src.globals import VERBOSE, STATE
-from src.fitness import FitnessFunction, calculate_fitnesses, distance_optimal_f1_score_fitness
-from src.ops import *
-from src.loaders import load_torch_preds_from_directory
+from giraffe.draw import draw_tree
+from giraffe.gp_ops import *
+from giraffe.globals import VERBOSE, STATE
+from giraffe.fitness import FitnessFunction, calculate_fitnesses, distance_optimal_f1_score_fitness
+from giraffe.ops import *
+from giraffe.loaders import load_torch_preds_from_directory
 
 from tinygrad.tensor import Tensor
 from torch import load

@@ -1,7 +1,7 @@
 from graphviz import Digraph
 
-from src.node import ValueNode, Node
-from src.tree import Tree
+from giraffe.node import ValueNode, Node
+from giraffe.tree import Tree
 
 import numpy as np
 

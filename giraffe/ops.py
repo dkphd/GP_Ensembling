@@ -3,11 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from paretoset import paretoset
 
-from src.tree import Tree
-from src.node import *
+from giraffe.tree import Tree
+from giraffe.node import *
 
-from src.globals import VERBOSE, STATE
-from src.fitness import calculate_fitnesses
+from giraffe.globals import VERBOSE, STATE
+from giraffe.fitness import calculate_fitnesses
 
 from pathlib import Path
 import matplotlib as mpl

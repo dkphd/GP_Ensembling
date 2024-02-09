@@ -1,5 +1,5 @@
 from gp import main
-from src.fitness import FitnessFunction
+from giraffe.fitness import FitnessFunction
 from tqdm import tqdm
 from pathlib import Path
 

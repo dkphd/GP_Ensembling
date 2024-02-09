@@ -4,9 +4,9 @@ import numpy as np
 
 import torch
 
-from src.node import *
-from src.globals import VERBOSE
-from src.utils import Pickle
+from giraffe.node import *
+from giraffe.globals import VERBOSE
+from giraffe.utils import Pickle
 
 class Tree:
     def __init__(self, root: ValueNode, mutation_chance=0.1):

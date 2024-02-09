@@ -1,4 +1,4 @@
-from src.tree import Tree
+from giraffe.tree import Tree
 import torch
 import tempfile
 from pathlib import Path
