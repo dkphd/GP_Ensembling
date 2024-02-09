@@ -100,7 +100,7 @@ class Tree:
         at_parent = at.parent
         
         if at_parent is None:
-            if VERBOSE:
+            if VERBOSE >= 3:
                 print("Warning: node at replacement is root node")
             self.root = replacement
             if isinstance(self.root, OperatorNode):
@@ -141,7 +141,7 @@ class Tree:
             node = self.nodes[nodes_type][i]
             if (allow_leaves or node.children != []) and (allow_root or node != self.root):
                 return node
-        raise Exception("No node found that complies to constraints")
+        raise Exception("No node found that complies to the constraints")
 
 
     def update_nodes(self):
@@ -151,6 +151,10 @@ class Tree:
                 self.nodes["value_nodes"].append(node)
             else:
                 self.nodes["op_nodes"].append(node)
+
+
+    def get_unique_value_node_ids(self):
+        return list(set([node.id for node in self.nodes["value_nodes"]]))
 
 
     def save_tree_architecture(self, output_path):
@@ -163,22 +167,30 @@ class Tree:
 
 
     @staticmethod
-    def load_tree(architecture_path, preds_directory):
+    def load_tree_architecture(architecture_path):
+        return Pickle.load(architecture_path)
+
+
+    @staticmethod
+    def load_tree(architecture_path, preds_directory, tensors = {}):
         loaded = Pickle.load(architecture_path)
+
         if VERBOSE:
             unique_ids = []
         for value_node in loaded.nodes["value_nodes"]:
             node_id = value_node.id
             if VERBOSE and node_id not in unique_ids:
                 unique_ids.append(node_id)
-            value_tensor = torch.load(preds_directory / node_id)
-            value_node.value = Tensor(value_tensor.numpy())
+            if node_id not in tensors:
+                value_tensor = torch.load(preds_directory / node_id)
+                tensors[node_id] = value_tensor
+            value_node.value = tensors[node_id]
         
         if VERBOSE:
             print(f"Loaded tree has {len(unique_ids)} unique ids")
             print(f"Loaded tree has {len(loaded.nodes['value_nodes'])} value nodes")
                   
-        return loaded
+        return loaded, tensors
 
     def _clean_evals(self):
         for node in self.nodes["value_nodes"]:

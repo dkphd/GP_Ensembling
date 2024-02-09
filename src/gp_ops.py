@@ -6,7 +6,7 @@ from copy import deepcopy
 
 import numpy as np
 
-def crossover(tree1: Tree, tree2: Tree, debug=False, mutation_chance_crossover=False):
+def crossover(tree1: Tree, tree2: Tree, verbose=False, mutation_chance_crossover=False):
 
     tree1, tree2 = tree1.copy(), tree2.copy()
 
@@ -85,7 +85,7 @@ def mutate_population(population, tensors, ids, allow_all_ops=False):
                 mutated_tree.update_nodes()
                 mutated_trees.append(mutated_tree)
             except Exception as e:
-                if DEBUG > 2:
+                if VERBOSE > 2:
                     print("Mutation failed due to: ", e)
                 continue
 

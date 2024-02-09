@@ -38,15 +38,15 @@ def choose_pareto_optimal(population, fitnesses):
         fig, ax = plt.subplots(figsize=(8, 4))
 
         # Load your custom font
-        fpath = Path(mpl.get_data_path(), "fonts/ttf/times.ttf")
-        prop = FontProperties(fname=fpath)
+        # fpath = Path(mpl.get_data_path(), "fonts/ttf/times.ttf")
+        # prop = FontProperties(fname=fpath)
 
-        # Apply the font globally
-        mpl.rcParams['font.family'] = prop.get_name()
+        # # Apply the font globally
+        # mpl.rcParams['font.family'] = prop.get_name()
 
         ax.scatter(df['size'][~mask], df.fitness[~mask], c="black")
         ax.scatter(df['size'][mask], df.fitness[mask], c="#62b879")
-        ax.set_xlabel("Times New Roman")
+        ax.set_xlabel("Ensemble size")
         # plt.legend()
 
         fig.savefig(f'./pareto_plots/pareto_{STATE["GLOBAL_ITERATION"]}.png')
