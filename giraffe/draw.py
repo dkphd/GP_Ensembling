@@ -19,7 +19,10 @@ def draw_tree(to_draw: Union[Tree, Node], dot=None, add_val_eval=True):
         dot = Digraph(comment="Tree")
 
     if isinstance(node, ValueNode):
-        value = node.value.numpy() if (np.prod(node.value.shape) <= 9) else f"Tensor with memory adress: {hex(id(node.value))}"
+        if node.value is not None:
+            value = node.value.numpy() if (np.prod(node.value.shape) <= 9) else f"Tensor with memory adress: {hex(id(node.value))}"
+        else:
+            value = None
 
         
         if node.evaluation is not None:

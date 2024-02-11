@@ -28,7 +28,7 @@ class Node(ABC):
         self.children.append(child_node)
 
 
-    def get_nodes(self):
+    def get_nodes(self): # TODO: This is not topologically sorted, change that
         """
         Get all nodes in the tree created by node and it's subnodes.
 
