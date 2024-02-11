@@ -2,6 +2,7 @@ from graphviz import Digraph
 
 from giraffe.node import ValueNode, Node
 from giraffe.tree import Tree
+import giraffe
 
 import numpy as np
 
@@ -9,7 +10,7 @@ from typing import Union
 
 def draw_tree(to_draw: Union[Tree, Node], dot=None, add_val_eval=True):
 
-    if isinstance(to_draw, Tree):
+    if isinstance(to_draw, giraffe.tree.Tree):
         node = to_draw.root
     else:
         node = to_draw

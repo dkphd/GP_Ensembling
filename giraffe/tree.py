@@ -1,4 +1,5 @@
 from tinygrad.tensor import Tensor
+from giraffe.globals import DEVICE
 
 import numpy as np
 
@@ -173,24 +174,26 @@ class Tree:
 
     @staticmethod
     def load_tree(architecture_path, preds_directory, tensors = {}):
+        current_tensors = {}
+        current_tensors.update(tensors) # needed because otherwise the tensors would be update in place in class and load tree would not reload
         loaded = Pickle.load(architecture_path)
-
         if VERBOSE:
             unique_ids = []
         for value_node in loaded.nodes["value_nodes"]:
             node_id = value_node.id
             if VERBOSE and node_id not in unique_ids:
                 unique_ids.append(node_id)
-            if node_id not in tensors:
-                value_tensor = torch.load(preds_directory / node_id)
-                tensors[node_id] = value_tensor
-            value_node.value = tensors[node_id]
+            if node_id not in current_tensors:
+                with torch.no_grad():
+                    value_tensor = torch.load(preds_directory / node_id).numpy()
+                    current_tensors[node_id] = Tensor(value_tensor, device=DEVICE)
+            value_node.value = current_tensors[node_id]
         
         if VERBOSE:
             print(f"Loaded tree has {len(unique_ids)} unique ids")
             print(f"Loaded tree has {len(loaded.nodes['value_nodes'])} value nodes")
                   
-        return loaded, tensors
+        return loaded, current_tensors
 
     def _clean_evals(self):
         for node in self.nodes["value_nodes"]:
