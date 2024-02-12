@@ -34,16 +34,6 @@ def binary_cross_entropy_fitness(tree: Tree, gt: Tensor):
     return -binary_cross_entropy_loss(gt, pred).numpy().item()
 
 
-
-class FitnessFunction(Enum):
-    F1_SCORE = member(f1_score_fitness)
-    BINARY_CROSS_ENTROPY = member(binary_cross_entropy_fitness)
-    AVERAGE_PRECISION = member(average_precision_fitness)
-
-    def __str__(self):
-        return self.name
-
-
 def find_distance_optimal_threshold(tree: Tree, gt: Tensor):
     pred = tree.evaluation
     gt = gt.float()
@@ -62,3 +52,13 @@ def distance_optimal_f1_score_fitness(tree: Tree, gt: Tensor):
 
 def calculate_fitnesses(population, gt, fitness_function):
     return np.array([fitness_function(tree, gt) for tree in population])
+
+
+class FitnessFunction(Enum):
+    F1_SCORE = member(f1_score_fitness)
+    BINARY_CROSS_ENTROPY = member(binary_cross_entropy_fitness)
+    AVERAGE_PRECISION = member(average_precision_fitness)
+    DISTANCE_OPTIMAL_F1_SCORE = member(distance_optimal_f1_score_fitness)
+
+    def __str__(self):
+        return self.name
