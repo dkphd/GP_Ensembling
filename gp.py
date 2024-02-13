@@ -3,7 +3,10 @@ from pathlib import Path
 
 from giraffe.draw import draw_tree
 from giraffe.gp_ops import *
-from giraffe.globals import VERBOSE, STATE
+
+from giraffe.globals import VERBOSE, STATE, DEVICE
+from giraffe.globals import BACKEND as B
+
 from giraffe.fitness import FitnessFunction, calculate_fitnesses, distance_optimal_f1_score_fitness
 from giraffe.ops import *
 from giraffe.loaders import load_torch_preds_from_directory
@@ -53,7 +56,7 @@ def main(input_path, gt_path, population_size, population_multiplier, tournament
     if VERBOSE:
         print(f"Loaded {len(tensors)} models")
 
-    gt = Tensor(load(gt_path).numpy())
+    gt = B.load_torch(gt_path, DEVICE)
 
     print("Generating population...")
 

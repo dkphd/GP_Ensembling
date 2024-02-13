@@ -1,9 +1,10 @@
-from tinygrad.tensor import Tensor
+from tinygrad.tensor import Tensor # for now only for typehints, but should be something along the array like in the future
 
 from functools import partial
 from typing import List, Optional, Callable, Self
 from abc import ABC, abstractmethod
 
+from giraffe.globals import BACKEND as B
 
 class Node(ABC):
     """
@@ -116,7 +117,7 @@ class ReductionOperatorNode(OperatorNode, ABC):
 
     def calculate(self) -> Tensor:
         parent_eval = self.parent.evaluation if self.parent.evaluation is not None else self.parent.value
-        concat = Tensor.stack([parent_eval] + [child.calculate() for child in self.children], dim=0)
+        concat = B.concat([parent_eval] + [child.calculate() for child in self.children], axis=0)
         return self.operator(concat)
 
 
@@ -128,7 +129,7 @@ class MeanNode(ReductionOperatorNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children, partial(Tensor.mean, axis=0))
+        super().__init__(parent, children, partial(B.mean, axis=0))
 
     def __str__(self) -> str:
         return f"MeanNode"
@@ -170,7 +171,7 @@ class WeightedMeanNode(MeanNode):
         raise Exception("Adding child to weighted mean node is currently not supported due to the way weights are handled.")
 
     def __str__(self) -> str:
-        return f"WeightedMeanNode with weights: {self.weights.numpy():.2f}"
+        return f"WeightedMeanNode with weights: {B.to_numpy(self.weights):.2f}"
     
 
     @property
@@ -186,7 +187,7 @@ class MaxNode(ReductionOperatorNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children, partial(Tensor.max, axis=0))
+        super().__init__(parent, children, partial(B.max, axis=0))
 
     def __str__(self) -> str:
         return f"MaxNode"
@@ -209,7 +210,7 @@ class MinNode(ReductionOperatorNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children, partial(Tensor.min, axis=0))
+        super().__init__(parent, children, partial(B.min, axis=0))
 
     def __str__(self) -> str:
         return f"MinNode"

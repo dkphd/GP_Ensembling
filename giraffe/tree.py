@@ -1,5 +1,6 @@
 from tinygrad.tensor import Tensor
 from giraffe.globals import DEVICE
+from giraffe.globals import BACKEND as B
 
 import numpy as np
 
@@ -55,7 +56,7 @@ class Tree:
     
 
     @property
-    def top_sorted_nodes(self):
+    def top_sorted_nodes(self): # should use Node's get_nodes() which needs to return top_sorted nodes instead
         pass # TODO
     
 
@@ -173,7 +174,7 @@ class Tree:
 
 
     @staticmethod
-    def load_tree(architecture_path, preds_directory, tensors = {}):
+    def load_tree(architecture_path, preds_directory, tensors = {}): # NEEDS TO USE BACKEND
         current_tensors = {}
         current_tensors.update(tensors) # needed because otherwise the tensors would be update in place in class and load tree would not reload
         loaded = Pickle.load(architecture_path)
@@ -184,9 +185,7 @@ class Tree:
             if VERBOSE and node_id not in unique_ids:
                 unique_ids.append(node_id)
             if node_id not in current_tensors:
-                with torch.no_grad():
-                    value_tensor = torch.load(preds_directory / node_id).numpy()
-                    current_tensors[node_id] = Tensor(value_tensor, device=DEVICE)
+                current_tensors[node_id] = B.load_torch(preds_directory / node_id, DEVICE)
             value_node.value = current_tensors[node_id]
         
         if VERBOSE:

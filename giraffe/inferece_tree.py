@@ -1,7 +1,7 @@
-from giraffe.tree import Tree
 import torch
 import tempfile
 from pathlib import Path
+import os
 
 class InferenceTree:
     """
@@ -9,7 +9,12 @@ class InferenceTree:
     It is generally not recommended to use it as it is not optimized for performance and may be unstable.
     """
 
-    def __init__(self, tree_architecture_path, prediction_functions: dict):
+    def __init__(self, tree_architecture_path, prediction_functions: dict, backend="torch"):
+
+        os.environ["BACKEND"] = backend
+        self.backend = backend
+        from giraffe.tree import Tree
+
         self.tree_architecture_path = tree_architecture_path
         self.prediction_functions = prediction_functions
 
@@ -24,17 +29,41 @@ class InferenceTree:
         """
         Perform inference with the input data.
         """
+        from giraffe.tree import Tree
+        from giraffe.globals import BACKEND as B
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_dir = Path(temp_dir)
+        if self.backend == 'tinygrad':
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_dir = Path(temp_dir)
+                for model_id, prediction_function in self.prediction_functions.items():
+                    predicted = prediction_function(input_data)
+                    predicted = self.to_torch_tensor(predicted)
+                    torch.save(predicted, temp_dir / model_id)
+                
+                tree, _ = Tree.load_tree(self.tree_architecture_path, temp_dir)
+                return B.to_numpy(tree.evaluation)
+            
+        elif self.backend == 'torch':
+            tensors = {}
             for model_id, prediction_function in self.prediction_functions.items():
                 predicted = prediction_function(input_data)
-                if not isinstance(predicted, torch.Tensor):
-                    try:
-                        predicted = torch.tensor(predicted)
-                    except ValueError:
-                        raise Exception("Prediction function did not return a tensor or something that can be converted to a tensor")
-                torch.save(predicted, temp_dir / model_id)
+                predicted = self.to_torch_tensor(predicted)
+                tensors[model_id] = predicted
             
-            tree, _ = Tree.load_tree(self.tree_architecture_path, temp_dir)
-            return tree.evaluation.numpy()
+            tree, _ = Tree.load_tree(self.tree_architecture_path, Path("."), tensors)
+            return tree.evaluation
+        else:
+            raise ValueError(f"Backend {self.backend} not supported")
+
+        
+
+
+    @staticmethod
+    def to_torch_tensor(data):
+        if isinstance(data, torch.Tensor):
+            return data
+        else:
+            try:
+                return torch.tensor(data)
+            except:
+                raise Exception("Could not convert data to torch tensor")

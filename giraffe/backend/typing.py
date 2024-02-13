@@ -1,0 +1,2 @@
+class TensorLike:
+    pass
