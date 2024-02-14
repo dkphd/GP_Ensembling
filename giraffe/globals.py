@@ -1,4 +1,5 @@
 import os
+from giraffe.backend.backend import Backend
 
 def get_device():
     # check if on mac
@@ -8,21 +9,19 @@ def get_device():
         return None
 
 
-def get_backend(backend=None):
-    if backend == 'tinygrad' or backend is None:
-        import giraffe.backend.tinygrad as backend
-        return backend
-    elif backend == 'torch':
-        import giraffe.backend.pytorch as backend
-        return backend
-    else:
-        raise ValueError(f"Backend {backend} not supported")
-
-
 VERBOSE = int(os.environ.get('VERBOSE', 0))
 DEVICE = os.environ.get('DEVICE', get_device())
 KEEP_GRADIENTS = int(os.environ.get('KEEP_GRADIENTS', 0))
-BACKEND = get_backend(os.environ.get('BACKEND', 'tinygrad'))
+
+Backend.set_backend(os.environ.get('BACKEND', 'torch'))
+BACKEND = Backend.get_backend()
+
+def set_backend(backend_name):
+    Backend.set_backend(backend_name)
+
+def get_backend():
+    return Backend.get_backend()
+    
 
 STATE = {
     "GLOBAL_ITERATION": 0

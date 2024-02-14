@@ -1,32 +1,43 @@
 from tinygrad.tensor import Tensor
+from giraffe.backend.backend_interface import BackendInterface
 
-def concat(tensors, axis=0):
-    return Tensor.stack(tensors, dim=axis)
+class TinyGradBackend(BackendInterface):
 
-def mean(x, axis=None):
-    return Tensor.mean(x, axis=axis)
+    @staticmethod
+    def concat(tensors, axis=0):
+        return Tensor.stack(tensors, dim=axis)
 
-def max(x, axis=None):
-    return Tensor.max(x, axis=axis)
+    @staticmethod
+    def mean(x, axis=None):
+        return Tensor.mean(x, axis=axis)
 
-def min(x, axis=None):
-    return Tensor.min(x, axis=axis)
+    @staticmethod
+    def max(x, axis=None):
+        return Tensor.max(x, axis=axis)
 
-def to_numpy(x):
-    return x.numpy()
+    @staticmethod
+    def min(x, axis=None):
+        return Tensor.min(x, axis=axis)
 
-def clip(x, min, max):
-    return x.clip(min, max)
+    @staticmethod
+    def to_numpy(x):
+        return x.numpy()
 
-def log(x):
-    return x.log()
+    @staticmethod
+    def clip(x, min, max):
+        return x.clip(min, max)
 
-def to_float(x):
-    return x.float()
+    @staticmethod
+    def log(x):
+        return x.log()
 
-def load_torch(path, device="cpu"):
-    import torch
-    with torch.no_grad():
-        tensor = torch.load(path).numpy()
-        return Tensor(tensor, device=device)
-    
+    @staticmethod
+    def to_float(x):
+        return x.float()
+
+    @staticmethod
+    def load_torch(path, device="cpu"):
+        import torch
+        with torch.no_grad():
+            tensor = torch.load(path).numpy()
+            return Tensor(tensor, device=device)

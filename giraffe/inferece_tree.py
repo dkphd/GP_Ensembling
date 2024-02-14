@@ -2,6 +2,9 @@ import torch
 import tempfile
 from pathlib import Path
 import os
+from giraffe.globals import BACKEND as B
+from giraffe.backend.backend import Backend
+from giraffe.tree import Tree
 
 class InferenceTree:
     """
@@ -11,10 +14,9 @@ class InferenceTree:
 
     def __init__(self, tree_architecture_path, prediction_functions: dict, backend="torch"):
 
-        os.environ["BACKEND"] = backend
+        Backend.set_backend(backend)
         self.backend = backend
-        from giraffe.tree import Tree
-
+        
         self.tree_architecture_path = tree_architecture_path
         self.prediction_functions = prediction_functions
 
@@ -29,8 +31,6 @@ class InferenceTree:
         """
         Perform inference with the input data.
         """
-        from giraffe.tree import Tree
-        from giraffe.globals import BACKEND as B
 
         if self.backend == 'tinygrad':
             with tempfile.TemporaryDirectory() as temp_dir:
