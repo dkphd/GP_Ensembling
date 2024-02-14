@@ -8,7 +8,6 @@ class PyTorchBackend(BackendInterface):
     @staticmethod
     def concat(tensors, axis=0):
         # check if tensors are not unidimensional, if so we need to add singular dimension before concatenating
-        print([tensor.shape for tensor in tensors])
         if len(tensors[0].shape) == 1:
             tensors = [t.unsqueeze(0) for t in tensors]
         return torch.cat(tensors, dim=axis)
