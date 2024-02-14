@@ -8,22 +8,22 @@ class PyTorchBackend(BackendInterface):
     @staticmethod
     def concat(tensors, axis=0):
         # check if tensors are not unidimensional, if so we need to add singular dimension before concatenating
-        print([t.shape for t in tensors])
+        print([tensor.shape for tensor in tensors])
         if len(tensors[0].shape) == 1:
             tensors = [t.unsqueeze(0) for t in tensors]
         return torch.cat(tensors, dim=axis)
     
     @staticmethod
     def mean(x, axis=None):
-        return torch.mean(x, axis=axis)
+        return torch.mean(x, axis=axis).unsqueeze(0)
     
     @staticmethod
     def max(x, axis=None):
-        return torch.max(x, axis=axis)
+        return torch.max(x, axis=axis).unsqueeze(0)
     
     @staticmethod
     def min(x, axis=None):
-        return torch.min(x, axis=axis)
+        return torch.min(x, axis=axis).unsqueeze(0)
     
     @staticmethod
     def to_numpy(x):
@@ -43,4 +43,8 @@ class PyTorchBackend(BackendInterface):
 
     @staticmethod
     def load_torch(path, device="cpu"):
-        return torch.load(path, map_location=device)
+        tensor = torch.load(path, map_location=device)
+        if len(tensor.shape) == 1:
+            tensor = tensor.unsqueeze(0)
+
+        return tensor

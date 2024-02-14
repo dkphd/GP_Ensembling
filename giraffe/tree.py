@@ -170,14 +170,17 @@ class Tree:
 
     @staticmethod
     def load_tree_architecture(architecture_path):
-        return Pickle.load(architecture_path)
+        architeture = Pickle.load(architecture_path)
+        for operator_node in architeture.nodes["op_nodes"]:
+            operator_node.operator = type(operator_node).get_operator()
+        return architeture
 
 
     @staticmethod
     def load_tree(architecture_path, preds_directory, tensors = {}): # NEEDS TO USE BACKEND
         current_tensors = {}
         current_tensors.update(tensors) # needed because otherwise the tensors would be update in place in class and load tree would not reload
-        loaded = Pickle.load(architecture_path)
+        loaded = Tree.load_tree_architecture(architecture_path)
         if VERBOSE:
             unique_ids = []
         for value_node in loaded.nodes["value_nodes"]:
