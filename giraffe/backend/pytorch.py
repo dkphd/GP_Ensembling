@@ -18,11 +18,11 @@ class PyTorchBackend(BackendInterface):
     
     @staticmethod
     def max(x, axis=None):
-        return torch.max(x, axis=axis).unsqueeze(0)
+        return torch.max(x, axis=axis).values.unsqueeze(0)
     
     @staticmethod
     def min(x, axis=None):
-        return torch.min(x, axis=axis).unsqueeze(0)
+        return torch.min(x, axis=axis).values.unsqueeze(0)
     
     @staticmethod
     def to_numpy(x):
