@@ -212,7 +212,7 @@ class MaxNode(ReductionOperatorNode):
     
     @staticmethod
     def get_operator():
-        return partial(B.mean, axis=0)
+        return partial(B.max, axis=0)
 
 
 
@@ -240,7 +240,7 @@ class MinNode(ReductionOperatorNode):
 
     @staticmethod
     def get_operator():
-        return partial(B.mean, axis=0)
+        return partial(B.min, axis=0)
 
 class ValueNode(Node):
     """
