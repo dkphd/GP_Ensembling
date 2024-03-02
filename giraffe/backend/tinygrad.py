@@ -47,3 +47,7 @@ class TinyGradBackend(BackendInterface):
         import numpy as np
 
         return Tensor(np.load(path), device=device)
+
+    @staticmethod
+    def shape(x):
+        return x.shape

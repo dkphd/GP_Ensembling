@@ -3,33 +3,37 @@ from abc import ABC
 
 class BackendInterface(ABC):
     @staticmethod
-    def concat(self, tensors, axis=0):
+    def concat(tensors, axis=0):
         raise NotImplementedError()
 
     @staticmethod
-    def mean(self, x, axis=None):
+    def mean(x, axis=None):
         raise NotImplementedError()
 
     @staticmethod
-    def max(self, x, axis=None):
+    def max(x, axis=None):
         raise NotImplementedError()
 
     @staticmethod
-    def min(self, x, axis=None):
+    def min(x, axis=None):
         raise NotImplementedError()
 
     @staticmethod
-    def to_numpy(self, x):
+    def to_numpy(x):
         raise NotImplementedError()
 
     @staticmethod
-    def clip(self, x, min, max):
+    def clip(x, min, max):
         raise NotImplementedError()
 
     @staticmethod
-    def log(self, x):
+    def log(x):
         raise NotImplementedError()
 
     @staticmethod
-    def to_float(self, x):
+    def to_float(x):
+        raise NotImplementedError()
+
+    @staticmethod
+    def shape(x):
         raise NotImplementedError()

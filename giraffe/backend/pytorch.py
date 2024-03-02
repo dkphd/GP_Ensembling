@@ -53,3 +53,7 @@ class PyTorchBackend(BackendInterface):
         import numpy as np
 
         return torch.from_numpy(np.load(path), device=device)
+
+    @staticmethod
+    def shape(x):
+        return x.shape

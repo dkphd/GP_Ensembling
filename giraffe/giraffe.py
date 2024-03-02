@@ -35,6 +35,9 @@ class Giraffe:
         if seed is not None:
             np.random.seed(seed)
 
+        self.tensors, self.gt = self._load_data(self.input_paths, self.gt_path)
+        self._validate_input()
+
     def _get_input_paths(self, preds_source):
         if hasattr(preds_source, "__iter__"):
             return [Path(preds_source) for preds_source in preds_source]
@@ -66,3 +69,19 @@ class Giraffe:
                     )
             else:
                 raise ValueError(f"Unknown file extension {extension}")
+
+            return loader
+
+    def _load_data(self, input_paths, gt_path):
+        tensors = {path.name: self.loader(path) for path in input_paths}
+        gt = self.loader(gt_path)
+        return tensors, gt
+
+    def _validate_input(self):
+        # check if all tensors have the same shape
+        shapes = [B.shape(tensor) for tensor in self.tensors.values()]
+        if len(set(shapes)) > 1:
+            raise ValueError(f"Tensors have different shapes: {shapes}")
+
+        if B.shape(self.gt)[0] != shapes[0]:
+            raise ValueError(f"Ground truth tensor has different shape than input tensors: {B.shape(self.gt)}")
