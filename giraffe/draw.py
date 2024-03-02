@@ -9,8 +9,8 @@ import numpy as np
 
 from typing import Union
 
-def draw_tree(to_draw: Union[Tree, Node], dot=None, add_val_eval=True):
 
+def draw_tree(to_draw: Union[Tree, Node], dot=None, add_val_eval=True):
     if isinstance(to_draw, giraffe.tree.Tree):
         node = to_draw.root
     else:
@@ -21,18 +21,25 @@ def draw_tree(to_draw: Union[Tree, Node], dot=None, add_val_eval=True):
 
     if isinstance(node, ValueNode):
         if node.value is not None:
-            value = B.to_numpy(node.value) if (np.prod(node.value.shape) <= 9) else f"Tensor with memory adress: {hex(id(node.value))}"
+            value = (
+                B.to_numpy(node.value)
+                if (np.prod(node.value.shape) <= 9)
+                else f"Tensor with memory adress: {hex(id(node.value))}"
+            )
         else:
             value = None
 
-        
         if node.evaluation is not None:
-            evaluation = B.to_numpy(node.evaluation) if (np.prod(node.evaluation.shape) <= 9) else f"Tensor with memory adress: {hex(id(node.evaluation))}"
+            evaluation = (
+                B.to_numpy(node.evaluation)
+                if (np.prod(node.evaluation.shape) <= 9)
+                else f"Tensor with memory adress: {hex(id(node.evaluation))}"
+            )
         else:
             evaluation = None
 
-        display_string = f"Value Node\n"
-        
+        display_string = "Value Node\n"
+
         if node.id is not None:
             display_string += f"Model ID: {node.id}\n"
 

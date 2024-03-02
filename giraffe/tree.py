@@ -4,15 +4,14 @@ from giraffe.globals import BACKEND as B
 
 import numpy as np
 
-import torch
 
-from giraffe.node import *
+from giraffe.node import OperatorNode, ValueNode, Node
 from giraffe.globals import VERBOSE
 from giraffe.utils import Pickle
 
+
 class Tree:
     def __init__(self, root: ValueNode, mutation_chance=0.1):
-
         self.root = root
 
         if isinstance(self.root, OperatorNode):
@@ -23,11 +22,10 @@ class Tree:
 
     # factory methods
     @staticmethod
-    def create_tree_from_models(models, mutation_chance = 0.1, ids = None):
+    def create_tree_from_models(models, mutation_chance=0.1, ids=None):
         if ids is None:
             ids = np.arange(len(models))
         assert len(models) == len(ids)
-
 
         idx = np.random.choice(len(models))
         root = ValueNode(None, [], models[idx], ids[idx])
@@ -35,14 +33,14 @@ class Tree:
         return tree
 
     @staticmethod
-    def create_random_tree(mutation_chance = 0.1):
+    def create_random_tree(mutation_chance=0.1):
         root = ValueNode(None, [], Tensor.randn(1, 2))
         tree = Tree(root, mutation_chance)
         return tree
 
     @staticmethod
-    def create_tree_from_root(root: Node, mutation_chance = 0.1):
-        tree =  Tree(root, mutation_chance)
+    def create_tree_from_root(root: Node, mutation_chance=0.1):
+        tree = Tree(root, mutation_chance)
         tree.update_nodes()
         return tree
 
@@ -53,12 +51,10 @@ class Tree:
     @property
     def nodes_count(self):
         return len(self.nodes["value_nodes"]) + len(self.nodes["op_nodes"])
-    
 
     @property
-    def top_sorted_nodes(self): # should use Node's get_nodes() which needs to return top_sorted nodes instead
-        pass # TODO
-    
+    def top_sorted_nodes(self):  # should use Node's get_nodes() which needs to return top_sorted nodes instead
+        pass  # TODO
 
     def recalculate(self):
         self._clean_evals()
@@ -98,9 +94,8 @@ class Tree:
         self._clean_evals()
 
     def replace_at(self, at: Node, replacement: Node):
-
         at_parent = at.parent
-        
+
         if at_parent is None:
             if VERBOSE >= 3:
                 print("Warning: node at replacement is root node")
@@ -123,7 +118,6 @@ class Tree:
         self._clean_evals()
 
     def get_random_node(self, nodes_type: str = None, allow_root=True, allow_leaves=True):
-
         if self.root.children == []:
             if allow_root:
                 if nodes_type is None or nodes_type == "value_nodes":
@@ -132,8 +126,6 @@ class Tree:
                     raise Exception("Tree has only root node and nodes_type is not value_nodes")
             else:
                 raise Exception("Tree has only root node and allow_root is set to False")
-
-
 
         if nodes_type is None:
             nodes_type = np.random.choice(["value_nodes", "op_nodes"])
@@ -145,7 +137,6 @@ class Tree:
                 return node
         raise Exception("No node found that complies to the constraints")
 
-
     def update_nodes(self):
         self.nodes = {"value_nodes": [], "op_nodes": []}
         for node in self.root.get_nodes():
@@ -154,19 +145,15 @@ class Tree:
             else:
                 self.nodes["op_nodes"].append(node)
 
-
     def get_unique_value_node_ids(self):
         return list(set([node.id for node in self.nodes["value_nodes"]]))
 
-
     def save_tree_architecture(self, output_path):
-
         copy_tree = self.copy()
         for index_node, node in enumerate(copy_tree.nodes["value_nodes"]):
             node.value = node.evaluation = None
-        
-        Pickle.save(output_path, copy_tree)
 
+        Pickle.save(output_path, copy_tree)
 
     @staticmethod
     def load_tree_architecture(architecture_path):
@@ -175,11 +162,12 @@ class Tree:
             operator_node.operator = type(operator_node).get_operator()
         return architeture
 
-
     @staticmethod
-    def load_tree(architecture_path, preds_directory, tensors = {}): # NEEDS TO USE BACKEND
+    def load_tree(architecture_path, preds_directory, tensors={}):  # NEEDS TO USE BACKEND
         current_tensors = {}
-        current_tensors.update(tensors) # needed because otherwise the tensors would be update in place in class and load tree would not reload
+        current_tensors.update(
+            tensors
+        )  # needed because otherwise the tensors would be update in place in class and load tree would not reload
         loaded = Tree.load_tree_architecture(architecture_path)
         if VERBOSE:
             unique_ids = []
@@ -190,23 +178,21 @@ class Tree:
             if node_id not in current_tensors:
                 current_tensors[node_id] = B.load_torch(preds_directory / node_id, DEVICE)
             value_node.value = current_tensors[node_id]
-        
+
         if VERBOSE:
             print(f"Loaded tree has {len(unique_ids)} unique ids")
             print(f"Loaded tree has {len(loaded.nodes['value_nodes'])} value nodes")
-                  
+
         return loaded, current_tensors
 
     def _clean_evals(self):
         for node in self.nodes["value_nodes"]:
             node.evaluation = None
 
-
     def _scan_nodes_for_lack_of_parent(self):
         for node in self.nodes["op_nodes"]:
             if node.parent is None:
                 raise Exception("I have no parent!")
 
-
     def __repr__(self):
-        return '_'.join(node.code for node in self.root.get_nodes())
+        return "_".join(node.code for node in self.root.get_nodes())
