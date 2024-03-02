@@ -33,7 +33,3 @@ class BackendInterface(ABC):
     @staticmethod
     def to_float(self, x):
         raise NotImplementedError()
-
-    @staticmethod
-    def load_torch(self, path, device="cpu"):
-        raise NotImplementedError()

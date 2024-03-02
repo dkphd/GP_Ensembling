@@ -47,3 +47,9 @@ class PyTorchBackend(BackendInterface):
             tensor = tensor.unsqueeze(0)
 
         return tensor
+
+    @staticmethod
+    def load_numpy(path, device="cpu"):
+        import numpy as np
+
+        return torch.from_numpy(np.load(path), device=device)

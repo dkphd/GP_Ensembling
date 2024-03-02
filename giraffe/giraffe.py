@@ -58,5 +58,11 @@ class Giraffe:
                 loader = getattr(B, "load_numpy", None)
                 if loader is None:
                     raise ValueError("Numpy arrays found but selected backend does not have load_numpy method")
+            elif extension == ".tf":
+                loader = getattr(B, "load_tensorflow", None)
+                if loader is None:
+                    raise ValueError(
+                        "Tensorflow tensors found but selected backend does not have load_tensorflow method"
+                    )
             else:
                 raise ValueError(f"Unknown file extension {extension}")
