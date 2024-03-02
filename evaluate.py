@@ -7,6 +7,7 @@ from torch import load
 
 from sklearn.metrics import average_precision_score, f1_score, confusion_matrix
 from giraffe.fitness import find_distance_optimal_threshold
+from giraffe.globals import BACKEND as B
 from tinygrad.tensor import Tensor
 
 def load_args():
@@ -26,10 +27,10 @@ if __name__ == "__main__":
 
     tree_path, predictions_path, ground_truth_path = load_args()
 
-    tree = Tree.load_tree(tree_path, predictions_path)
-    gt = load(ground_truth_path).numpy()
+    tree, _ = Tree.load_tree(tree_path, predictions_path)
+    gt = B.to_numpy(load(ground_truth_path))
 
-    tree_preds = tree.evaluation.numpy()
+    tree_preds =B.to_numpy(tree.evaluation)
 
     f1 = f1_score(gt, tree_preds > 0.558)
 

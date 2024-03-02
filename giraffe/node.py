@@ -91,6 +91,8 @@ class Node(ABC):
         """
         pass
 
+    
+
 
 class OperatorNode(Node, ABC):
     """
@@ -129,7 +131,7 @@ class MeanNode(ReductionOperatorNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children, partial(B.mean, axis=0))
+        super().__init__(parent, children, MeanNode.get_operator())
 
     def __str__(self) -> str:
         return f"MeanNode"
@@ -142,6 +144,10 @@ class MeanNode(ReductionOperatorNode):
     @property
     def code(self) -> str:
         return "MN"
+    
+    @staticmethod
+    def get_operator():
+        return partial(B.mean, axis=0)
 
 
 class WeightedMeanNode(MeanNode):
@@ -177,6 +183,10 @@ class WeightedMeanNode(MeanNode):
     @property
     def code(self) -> str:
         return "WMN"
+    
+    @staticmethod
+    def get_operator():
+        return partial(B.mean, axis=0)
 
 
 class MaxNode(ReductionOperatorNode):
@@ -187,7 +197,7 @@ class MaxNode(ReductionOperatorNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children, partial(B.max, axis=0))
+        super().__init__(parent, children, MaxNode.get_operator())
 
     def __str__(self) -> str:
         return f"MaxNode"
@@ -199,6 +209,10 @@ class MaxNode(ReductionOperatorNode):
     @property
     def code(self) -> str:
         return "MXN"
+    
+    @staticmethod
+    def get_operator():
+        return partial(B.max, axis=0)
 
 
 
@@ -210,7 +224,7 @@ class MinNode(ReductionOperatorNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children, partial(B.min, axis=0))
+        super().__init__(parent, children, MinNode.get_operator())
 
     def __str__(self) -> str:
         return f"MinNode"
@@ -224,6 +238,9 @@ class MinNode(ReductionOperatorNode):
     def code(self) -> str:
         return "MIN"
 
+    @staticmethod
+    def get_operator():
+        return partial(B.min, axis=0)
 
 class ValueNode(Node):
     """
