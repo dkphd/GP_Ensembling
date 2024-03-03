@@ -7,7 +7,7 @@ from giraffe.globals import VERBOSE, STATE
 from giraffe.fitness import calculate_fitnesses
 
 
-def first_uniques(arr):
+def first_uniques_mask(arr):
     mask = []
     for index, item in enumerate(arr):
         if item not in arr[:index]:
@@ -82,7 +82,7 @@ def choose_pareto_rest_sorted(population, fitnesses, n):
     population = (include_pareto_models + population_sorted)[:n]
     fitnesses = np.concatenate([np.array(include_pareto_fitnesses), fitnesses_sorted])[:n]
 
-    return population, fitnesses
+    return population, fitnesses, include_pareto_models
 
 
 def join_populations(population, fitnesses, additional_population, gt, fitness_function):

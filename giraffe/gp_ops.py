@@ -6,7 +6,7 @@ from giraffe.globals import VERBOSE
 import numpy as np
 
 
-def crossover(tree1: Tree, tree2: Tree, verbose=False, mutation_chance_crossover=False):
+def crossover(tree1: Tree, tree2: Tree, mutation_chance_crossover=False):
     tree1, tree2 = tree1.copy(), tree2.copy()
 
     node1 = tree1.get_random_node()
@@ -39,7 +39,7 @@ def crossover(tree1: Tree, tree2: Tree, verbose=False, mutation_chance_crossover
 # Mutations
 
 
-def append_new_node_mutation(tree: Tree, models, ids=None, allow_all_ops=False, **kwargs):
+def append_new_node_mutation(tree: Tree, models, ids=None, allowed_ops=(MeanNode, MaxNode, MinNode), **kwargs):
     tree = tree.copy()
 
     if ids is None:
@@ -49,10 +49,7 @@ def append_new_node_mutation(tree: Tree, models, ids=None, allow_all_ops=False, 
 
     node = tree.get_random_node()
     if isinstance(node, ValueNode):
-        if allow_all_ops:
-            new_op = np.random.choice([MeanNode, MaxNode, MinNode], 1)[0](node, [])
-        else:
-            new_op = MeanNode(node, [])
+        new_op = np.random.choice(allowed_ops, 1)[0](node, [])
         new_val = ValueNode(new_op, [], models[idx_model], ids[idx_model])
         new_op.add_child(new_val)
         tree.append_after(node, new_op)
@@ -74,13 +71,13 @@ def lose_branch_mutation(tree: Tree, **kwargs):
 MUTATION_FUNCTIONS = [append_new_node_mutation, lose_branch_mutation]
 
 
-def mutate_population(population, tensors, ids, allow_all_ops=False):
+def mutate_population(population, tensors, ids, allowed_ops=(MeanNode, MaxNode, MinNode)):
     mutated_trees = []
     for tree in population:
         if np.random.rand() < tree.mutation_chance:
             try:
                 mutation_function = np.random.choice(MUTATION_FUNCTIONS, 1)[0]
-                mutated_tree = mutation_function(tree, models=tensors, ids=ids, allow_all_ops=allow_all_ops)
+                mutated_tree = mutation_function(tree, models=tensors, ids=ids, allowed_ops=allowed_ops)
                 mutated_tree.update_nodes()
                 mutated_trees.append(mutated_tree)
             except Exception as e:
@@ -120,7 +117,7 @@ def regenerate_population(population, fitnesses, n, tensors, gt, ids, fitness_fu
     if population_codes is None:
         population_codes = [tree.__repr__() for tree in population]
     while len(population) < n:
-        new_tree = Tree.create_tree_from_models(tensors, ids=ids)
+        new_tree = Tree.create_tree_from_tensors(tensors, ids=ids)
         code = new_tree.__repr__()
         if code not in population_codes:
             population.append(new_tree)

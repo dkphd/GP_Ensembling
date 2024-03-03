@@ -22,13 +22,13 @@ class Tree:
 
     # factory methods
     @staticmethod
-    def create_tree_from_models(models, mutation_chance=0.1, ids=None):
+    def create_tree_from_tensors(tensors, mutation_chance=0.1, ids=None):
         if ids is None:
-            ids = np.arange(len(models))
-        assert len(models) == len(ids)
+            ids = np.arange(len(tensors))
+        assert len(tensors) == len(ids)
 
-        idx = np.random.choice(len(models))
-        root = ValueNode(None, [], models[idx], ids[idx])
+        idx = np.random.choice(len(tensors))
+        root = ValueNode(None, [], tensors[idx], ids[idx])
         tree = Tree(root, mutation_chance)
         return tree
 
