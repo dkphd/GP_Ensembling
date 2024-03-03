@@ -37,3 +37,7 @@ class BackendInterface(ABC):
     @staticmethod
     def shape(x):
         raise NotImplementedError()
+
+    @staticmethod
+    def squeeze(x):
+        raise NotImplementedError()

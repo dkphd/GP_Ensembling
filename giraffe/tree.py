@@ -46,14 +46,16 @@ class Tree:
 
     @property
     def evaluation(self):
-        return self.root.evaluation if self.root.evaluation is not None else self.root.calculate()
+        return B.squeeze(self.root.evaluation if self.root.evaluation is not None else self.root.calculate())
 
     @property
     def nodes_count(self):
         return len(self.nodes["value_nodes"]) + len(self.nodes["op_nodes"])
 
     @property
-    def top_sorted_nodes(self):  # should use Node's get_nodes() which needs to return top_sorted nodes instead
+    def top_sorted_nodes(
+        self,
+    ):  # should use Node's get_nodes() which needs to return top_sorted nodes instead (as in calculate)
         pass  # TODO
 
     def recalculate(self):

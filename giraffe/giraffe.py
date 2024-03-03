@@ -65,6 +65,7 @@ class Giraffe:
         self._initialize_pop()
         self._call_hook("on_evolution_start")
 
+        self.should_stop = False
         for i in tqdm.tqdm(range(iterations)):
             self.iteration = i
             self._call_hook("on_generation_start")

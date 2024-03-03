@@ -57,3 +57,7 @@ class PyTorchBackend(BackendInterface):
     @staticmethod
     def shape(x):
         return x.shape
+
+    @staticmethod
+    def squeeze(x):
+        return x.squeeze()
