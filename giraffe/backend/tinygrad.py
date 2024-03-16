@@ -55,3 +55,7 @@ class TinyGradBackend(BackendInterface):
     @staticmethod
     def squeeze(x):
         return x.squeeze()
+
+    @staticmethod
+    def unsqueeze(x, axis):
+        return x.unsqueeze(axis)

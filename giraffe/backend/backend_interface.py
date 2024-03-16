@@ -41,3 +41,7 @@ class BackendInterface(ABC):
     @staticmethod
     def squeeze(x):
         raise NotImplementedError()
+
+    @staticmethod
+    def unsqueeze(x, axis):
+        raise NotImplementedError()

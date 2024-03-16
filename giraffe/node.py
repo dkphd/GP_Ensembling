@@ -125,7 +125,10 @@ class ReductionOperatorNode(OperatorNode, ABC):
 
     def calculate(self) -> Tensor:
         parent_eval = self.parent.evaluation if self.parent.evaluation is not None else self.parent.value
-        concat = B.concat([parent_eval] + [child.calculate() for child in self.children], axis=0)
+        concat = B.concat(
+            [B.unsqueeze(parent_eval, axis=0)] + [B.unsqueeze(child.calculate(), axis=0) for child in self.children],
+            axis=0,
+        )
         return self.operator(concat)
 
 

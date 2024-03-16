@@ -14,15 +14,15 @@ class PyTorchBackend(BackendInterface):
 
     @staticmethod
     def mean(x, axis=None):
-        return torch.mean(x, axis=axis).unsqueeze(axis)
+        return torch.mean(x, axis=axis)
 
     @staticmethod
     def max(x, axis=None):
-        return torch.max(x, axis=axis).values.unsqueeze(axis)
+        return torch.max(x, axis=axis).values
 
     @staticmethod
     def min(x, axis=None):
-        return torch.min(x, axis=axis).values.unsqueeze(axis)
+        return torch.min(x, axis=axis).values
 
     @staticmethod
     def to_numpy(x):
@@ -61,3 +61,7 @@ class PyTorchBackend(BackendInterface):
     @staticmethod
     def squeeze(x):
         return x.squeeze()
+
+    @staticmethod
+    def unsqueeze(x, axis):
+        return x.unsqueeze(axis)
