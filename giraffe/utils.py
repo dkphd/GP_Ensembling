@@ -1,5 +1,6 @@
 import pickle
 
+
 class Pickle:
     @staticmethod
     def load(path):

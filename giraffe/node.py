@@ -1,10 +1,13 @@
-from tinygrad.tensor import Tensor # for now only for typehints, but should be something along the array like in the future
+from tinygrad.tensor import (
+    Tensor,
+)  # for now only for typehints, but should be something along the array like in the future
 
 from functools import partial
 from typing import List, Optional, Callable, Self
 from abc import ABC, abstractmethod
 
 from giraffe.globals import BACKEND as B
+
 
 class Node(ABC):
     """
@@ -28,8 +31,7 @@ class Node(ABC):
         """
         self.children.append(child_node)
 
-
-    def get_nodes(self): # TODO: This is not topologically sorted, change that
+    def get_nodes(self):  # TODO: This is not topologically sorted, change that
         """
         Get all nodes in the tree created by node and it's subnodes.
 
@@ -41,7 +43,6 @@ class Node(ABC):
             nodes += child.get_nodes()
         nodes.append(self)
         return nodes
-    
 
     @abstractmethod
     def copy(self):
@@ -53,7 +54,6 @@ class Node(ABC):
         - Copy of the node
         """
         pass
-
 
     def copy_subtree(self):
         """
@@ -68,7 +68,6 @@ class Node(ABC):
             child.parent = self_copy
         return self_copy
 
-
     @abstractmethod
     def calculate(self) -> Tensor:
         """
@@ -78,7 +77,6 @@ class Node(ABC):
         - Calculated Tensor object
         """
         pass
-
 
     @property
     @abstractmethod
@@ -91,8 +89,6 @@ class Node(ABC):
         """
         pass
 
-    
-
 
 class OperatorNode(Node, ABC):
     """
@@ -101,7 +97,12 @@ class OperatorNode(Node, ABC):
     Operator Nodes are specialized nodes capable of performing operations on tensors.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], operator: Callable[[Tensor], Tensor] = lambda x: None):
+    def __init__(
+        self,
+        parent: Optional[Node],
+        children: Optional[List[Node]],
+        operator: Callable[[Tensor], Tensor] = lambda x: None,
+    ):
         super().__init__(parent, children)
         self.operator = operator
 
@@ -114,12 +115,20 @@ class ReductionOperatorNode(OperatorNode, ABC):
     of performing reduction operations like mean, max, min, etc., on tensors.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], operator: Callable[[Tensor], Tensor] = lambda x: None):
+    def __init__(
+        self,
+        parent: Optional[Node],
+        children: Optional[List[Node]],
+        operator: Callable[[Tensor], Tensor] = lambda x: None,
+    ):
         super().__init__(parent, children, operator)
 
     def calculate(self) -> Tensor:
         parent_eval = self.parent.evaluation if self.parent.evaluation is not None else self.parent.value
-        concat = B.concat([parent_eval] + [child.calculate() for child in self.children], axis=0)
+        concat = B.concat(
+            [B.unsqueeze(parent_eval, axis=0)] + [B.unsqueeze(child.calculate(), axis=0) for child in self.children],
+            axis=0,
+        )
         return self.operator(concat)
 
 
@@ -134,17 +143,15 @@ class MeanNode(ReductionOperatorNode):
         super().__init__(parent, children, MeanNode.get_operator())
 
     def __str__(self) -> str:
-        return f"MeanNode"
-    
+        return "MeanNode"
 
     def copy(self):
         return MeanNode(None, None)
 
-
     @property
     def code(self) -> str:
         return "MN"
-    
+
     @staticmethod
     def get_operator():
         return partial(B.mean, axis=0)
@@ -159,7 +166,6 @@ class WeightedMeanNode(MeanNode):
     """
 
     def __init__(self, parent: Optional[Node], children: Optional[List[Node]], weights: Tensor):
-        
         assert len(weights.shape) == 2
         assert weights.shape[0] == 1
         assert weights.shape[1] == len(children) + 1
@@ -168,22 +174,21 @@ class WeightedMeanNode(MeanNode):
 
         super().__init__(parent, children, lambda x: super().operator(x * self.weights))
 
-
     def copy(self):
         return WeightedMeanNode(None, None, self.weights)
 
-    
     def add_child(self, child_node: Self):
-        raise Exception("Adding child to weighted mean node is currently not supported due to the way weights are handled.")
+        raise Exception(
+            "Adding child to weighted mean node is currently not supported due to the way weights are handled."
+        )
 
     def __str__(self) -> str:
         return f"WeightedMeanNode with weights: {B.to_numpy(self.weights):.2f}"
-    
 
     @property
     def code(self) -> str:
         return "WMN"
-    
+
     @staticmethod
     def get_operator():
         return partial(B.mean, axis=0)
@@ -200,20 +205,18 @@ class MaxNode(ReductionOperatorNode):
         super().__init__(parent, children, MaxNode.get_operator())
 
     def __str__(self) -> str:
-        return f"MaxNode"
-    
+        return "MaxNode"
+
     def copy(self):
         return MaxNode(None, None)
-    
 
     @property
     def code(self) -> str:
         return "MXN"
-    
+
     @staticmethod
     def get_operator():
         return partial(B.max, axis=0)
-
 
 
 class MinNode(ReductionOperatorNode):
@@ -227,12 +230,10 @@ class MinNode(ReductionOperatorNode):
         super().__init__(parent, children, MinNode.get_operator())
 
     def __str__(self) -> str:
-        return f"MinNode"
-
+        return "MinNode"
 
     def copy(self):
         return MinNode(None, None)
-    
 
     @property
     def code(self) -> str:
@@ -241,6 +242,7 @@ class MinNode(ReductionOperatorNode):
     @staticmethod
     def get_operator():
         return partial(B.min, axis=0)
+
 
 class ValueNode(Node):
     """
@@ -264,7 +266,7 @@ class ValueNode(Node):
         return self.evaluation
 
     def __str__(self):
-        return f"ValueNode with value at: {hex(id(self.value))}"# and evaluation: {self.evaluation}"
+        return f"ValueNode with value at: {hex(id(self.value))}"  # and evaluation: {self.evaluation}"
 
     def add_child(self, child_node):
         super().add_child(child_node)
@@ -272,7 +274,6 @@ class ValueNode(Node):
 
     def copy(self):
         return ValueNode(None, None, self.value, self.id)
-    
 
     @property
     def code(self) -> str:

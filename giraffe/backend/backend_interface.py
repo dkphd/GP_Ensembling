@@ -1,39 +1,47 @@
 from abc import ABC
 
+
 class BackendInterface(ABC):
+    @staticmethod
+    def concat(tensors, axis=0):
+        raise NotImplementedError()
 
     @staticmethod
-    def concat(self, tensors, axis=0):
+    def mean(x, axis=None):
         raise NotImplementedError()
-    
+
     @staticmethod
-    def mean(self, x, axis=None):
+    def max(x, axis=None):
         raise NotImplementedError()
-    
+
     @staticmethod
-    def max(self, x, axis=None):
+    def min(x, axis=None):
         raise NotImplementedError()
-    
+
     @staticmethod
-    def min(self, x, axis=None):
+    def to_numpy(x):
         raise NotImplementedError()
-    
+
     @staticmethod
-    def to_numpy(self, x):
+    def clip(x, min, max):
         raise NotImplementedError()
-    
+
     @staticmethod
-    def clip(self, x, min, max):
+    def log(x):
         raise NotImplementedError()
-    
+
     @staticmethod
-    def log(self, x):
+    def to_float(x):
         raise NotImplementedError()
-    
+
     @staticmethod
-    def to_float(self, x):
+    def shape(x):
         raise NotImplementedError()
-    
+
     @staticmethod
-    def load_torch(self, path, device="cpu"):
+    def squeeze(x):
+        raise NotImplementedError()
+
+    @staticmethod
+    def unsqueeze(x, axis):
         raise NotImplementedError()

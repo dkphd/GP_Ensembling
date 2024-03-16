@@ -1,8 +1,8 @@
 from tinygrad.tensor import Tensor
 from giraffe.backend.backend_interface import BackendInterface
 
-class TinyGradBackend(BackendInterface):
 
+class TinyGradBackend(BackendInterface):
     @staticmethod
     def concat(tensors, axis=0):
         return Tensor.stack(tensors, dim=axis)
@@ -38,6 +38,24 @@ class TinyGradBackend(BackendInterface):
     @staticmethod
     def load_torch(path, device="cpu"):
         import torch
-        with torch.no_grad():
-            tensor = torch.load(path).numpy()
-            return Tensor(tensor, device=device)
+
+        tensor = torch.load(path).numpy()
+        return Tensor(tensor, device=device)
+
+    @staticmethod
+    def load_numpy(path, device="cpu"):
+        import numpy as np
+
+        return Tensor(np.load(path), device=device)
+
+    @staticmethod
+    def shape(x):
+        return x.shape
+
+    @staticmethod
+    def squeeze(x):
+        return x.squeeze()
+
+    @staticmethod
+    def unsqueeze(x, axis):
+        return x.unsqueeze(axis)

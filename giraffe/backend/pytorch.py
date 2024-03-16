@@ -1,8 +1,8 @@
 import torch
 from giraffe.backend.backend_interface import BackendInterface
 
-class PyTorchBackend(BackendInterface):
 
+class PyTorchBackend(BackendInterface):
     # rewrite all not call the already defined functions
 
     @staticmethod
@@ -11,19 +11,19 @@ class PyTorchBackend(BackendInterface):
         if len(tensors[0].shape) == 1:
             tensors = [t.unsqueeze(0) for t in tensors]
         return torch.cat(tensors, dim=axis)
-    
+
     @staticmethod
     def mean(x, axis=None):
-        return torch.mean(x, axis=axis).unsqueeze(axis)
-    
+        return torch.mean(x, axis=axis)
+
     @staticmethod
     def max(x, axis=None):
-        return torch.max(x, axis=axis).values.unsqueeze(axis)
-    
+        return torch.max(x, axis=axis).values
+
     @staticmethod
     def min(x, axis=None):
-        return torch.min(x, axis=axis).values.unsqueeze(axis)
-    
+        return torch.min(x, axis=axis).values
+
     @staticmethod
     def to_numpy(x):
         return x.detach().numpy()
@@ -47,3 +47,21 @@ class PyTorchBackend(BackendInterface):
             tensor = tensor.unsqueeze(0)
 
         return tensor
+
+    @staticmethod
+    def load_numpy(path, device="cpu"):
+        import numpy as np
+
+        return torch.from_numpy(np.load(path), device=device)
+
+    @staticmethod
+    def shape(x):
+        return x.shape
+
+    @staticmethod
+    def squeeze(x):
+        return x.squeeze()
+
+    @staticmethod
+    def unsqueeze(x, axis):
+        return x.unsqueeze(axis)

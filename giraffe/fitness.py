@@ -13,7 +13,7 @@ def f1_score_fitness(tree: Tree, gt: Tensor, threshold=0.5):
     pred = tree.evaluation
     pred = B.to_float((pred > threshold))
     gt = B.to_float(gt)
-    return f1_score(B.to_numpy(gt).ravel(), B.to_numpy(pred).ravel()) 
+    return f1_score(B.to_numpy(gt).ravel(), B.to_numpy(pred).ravel())
 
 
 def average_precision_fitness(tree: Tree, gt: Tensor):
@@ -23,11 +23,11 @@ def average_precision_fitness(tree: Tree, gt: Tensor):
 
 
 def binary_cross_entropy_loss(y_true, y_pred, epsilon=1e-15):
-
     y_pred = B.clip(y_pred, epsilon, 1 - epsilon)
     term_0 = B.log((1 - y_true) * (1 - y_pred + epsilon))
     term_1 = B.log(y_true * (y_pred + epsilon))
     return B.mean(-(term_0 + term_1), axis=0)
+
 
 def binary_cross_entropy_fitness(tree: Tree, gt: Tensor):
     pred = tree.evaluation
