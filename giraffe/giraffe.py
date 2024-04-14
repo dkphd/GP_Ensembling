@@ -31,6 +31,10 @@ class Giraffe:
         if backend is not None:
             Backend.set_backend(backend)
 
+        ## casts
+        preds_source = Path(preds_source)
+        gt_path = Path(gt_path)
+
         # BASIC GIRAFFE VARIABLES
         self.should_stop = False
         self.iteration = 0
