@@ -120,8 +120,10 @@ class Giraffe:
             else:
                 raise ValueError("If preds_source is a single path, it must be a directory")
 
-        if len(input_paths) <= self.population_size:
-            raise ValueError(f"Too little base models found, number of models: {len(input_paths)}")
+        if len(input_paths) < self.population_size:
+            raise ValueError(
+                f"Too little base models found to run giraffe with population size: {self.population_size}, number of models: {len(input_paths)}"
+            )
 
         return input_paths
 
