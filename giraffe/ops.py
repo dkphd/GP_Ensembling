@@ -71,15 +71,16 @@ def choose_pareto_rest_sorted(population, fitnesses, n):
     population_sorted, fitnesses_sorted = choose_sorted(population, fitnesses, n)
     sorted_codes = [tree.__repr__() for tree in population_sorted]
 
-    population = population_pareto
-    fitnesses = fitnesses_pareto
+    population = population_pareto[:n]
+    fitnesses = fitnesses_pareto[:n]
 
-    while len(population) < n:
-        for idx, code in enumerate(sorted_codes):
-            if code not in model_codes:
-                population.append(population_sorted[idx])
-                model_codes.append(code)
-                fitnesses = np.append(fitnesses, fitnesses_sorted[idx])
+    for idx, code in enumerate(sorted_codes):
+        if len(population) >= n:
+            break
+        if code not in model_codes:
+            population.append(population_sorted[idx])
+            model_codes.append(code)
+            fitnesses = np.append(fitnesses, fitnesses_sorted[idx])
 
     return population, fitnesses, population_pareto
 
