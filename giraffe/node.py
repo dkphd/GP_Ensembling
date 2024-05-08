@@ -89,6 +89,9 @@ class Node(ABC):
         """
         pass
 
+    def __repr__(self):
+        return self.code()
+
 
 class OperatorNode(Node, ABC):
     """
