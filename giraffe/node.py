@@ -1,12 +1,9 @@
-from tinygrad.tensor import (
-    Tensor,
-)  # for now only for typehints, but should be something along the array like in the future
-
 from functools import partial
 from typing import List, Optional, Callable, Self
 from abc import ABC, abstractmethod
 
 from giraffe.globals import BACKEND as B
+from giraffe.types import Tensor
 
 
 class Node(ABC):
