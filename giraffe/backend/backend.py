@@ -5,7 +5,7 @@ class Backend:
     _current_backend: BackendInterface = None
 
     @classmethod
-    def set_backend(cls, backend_name):
+    def set_backend(cls, backend_name):  # TODO: Add option to set backend by providing class instead
         if backend_name == "torch":
             from giraffe.backend.pytorch import PyTorchBackend
 

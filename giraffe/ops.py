@@ -66,23 +66,23 @@ def choose_sorted(population, fitnesses, n):
 
 def choose_pareto_rest_sorted(population, fitnesses, n):
     population_pareto, fitnesses_pareto = choose_pareto_optimal(population, fitnesses)
-    pareto_codes = [tree.__repr__() for tree in population_pareto]
+    model_codes = [tree.__repr__() for tree in population_pareto]
 
     population_sorted, fitnesses_sorted = choose_sorted(population, fitnesses, n)
     sorted_codes = [tree.__repr__() for tree in population_sorted]
 
-    include_pareto_models = []
-    include_pareto_fitnesses = []
+    population = population_pareto[:n]
+    fitnesses = fitnesses_pareto[:n]
 
-    for code, tree, fitness in zip(pareto_codes, population_pareto, fitnesses_pareto):
-        if code not in sorted_codes:
-            include_pareto_models.append(tree)
-            include_pareto_fitnesses.append(fitness)
+    for idx, code in enumerate(sorted_codes):
+        if len(population) >= n:
+            break
+        if code not in model_codes:
+            population.append(population_sorted[idx])
+            model_codes.append(code)
+            fitnesses = np.append(fitnesses, fitnesses_sorted[idx])
 
-    population = (include_pareto_models + population_sorted)[:n]
-    fitnesses = np.concatenate([np.array(include_pareto_fitnesses), fitnesses_sorted])[:n]
-
-    return population, fitnesses, include_pareto_models
+    return population, fitnesses, population_pareto
 
 
 def join_populations(population, fitnesses, additional_population, gt, fitness_function):

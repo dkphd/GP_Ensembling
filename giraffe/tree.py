@@ -1,6 +1,6 @@
-from tinygrad.tensor import Tensor
 from giraffe.globals import DEVICE
 from giraffe.globals import BACKEND as B
+from giraffe.types import Tensor
 
 import numpy as np
 

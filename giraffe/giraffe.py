@@ -31,15 +31,9 @@ class Giraffe:
         if backend is not None:
             Backend.set_backend(backend)
 
-        self.input_paths = self._get_input_paths(preds_source)
-        self.gt_path = Path(gt_path)
-        self.loader = (
-            loader if loader is not None else self._determine_loader(self.input_paths + [gt_path])
-        )  # TODO: add some checking here
-        if seed is not None:
-            np.random.seed(seed)
-
-        self.callbacks = callbacks
+        ## casts
+        preds_source = Path(preds_source)
+        gt_path = Path(gt_path)
 
         # BASIC GIRAFFE VARIABLES
         self.should_stop = False
@@ -57,6 +51,16 @@ class Giraffe:
         self.allowed_op_nodes = allowed_op_nodes
         self.mutation_chance_crossover = mutation_chance_crossover
         ###
+
+        self.input_paths = self._get_input_paths(preds_source)
+        self.gt_path = Path(gt_path)
+        self.loader = (
+            loader if loader is not None else self._determine_loader(self.input_paths + [gt_path])
+        )  # TODO: add some checking here
+        if seed is not None:
+            np.random.seed(seed)
+
+        self.callbacks = callbacks
 
         self.tensors, self.gt = self._load_data(self.input_paths, self.gt_path)
         self._validate_input()
@@ -109,12 +113,19 @@ class Giraffe:
 
     def _get_input_paths(self, preds_source):
         if hasattr(preds_source, "__iter__"):
-            return [Path(preds_source) for preds_source in preds_source]
+            input_paths = [Path(preds_source) for preds_source in preds_source]
         elif isinstance(preds_source, (Path, str)):
             if Path(preds_source).is_dir():
-                return list(Path(preds_source).glob("*"))
+                input_paths = list(Path(preds_source).glob("*"))
             else:
                 raise ValueError("If preds_source is a single path, it must be a directory")
+
+        if len(input_paths) < self.population_size:
+            raise ValueError(
+                f"Too little base models found to run giraffe with population size: {self.population_size}, number of models: {len(input_paths)}"
+            )
+
+        return input_paths
 
     def _determine_loader(self, input_paths):
         extensions = set([path.suffix for path in input_paths])

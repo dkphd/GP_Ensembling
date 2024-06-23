@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
+__version__ = "0.4.1"
+
 setup(
     name="giraffe",
-    version="0.4.0",
+    version=__version__,
     packages=find_packages(),
     install_requires=[
         "numpy",

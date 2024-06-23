@@ -1,7 +1,7 @@
 from giraffe.tree import Tree
 from giraffe.globals import BACKEND as B
 
-from tinygrad.tensor import Tensor
+from giraffe.types import Tensor
 
 import numpy as np
 from sklearn.metrics import f1_score, average_precision_score, precision_recall_curve
