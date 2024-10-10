@@ -59,6 +59,10 @@ class PyTorchBackend(BackendInterface):
         return x.shape
 
     @staticmethod
+    def reshape(x, *args, **kwargs):
+        return x.reshape(*args, **kwargs)
+
+    @staticmethod
     def squeeze(x):
         return x.squeeze()
 
