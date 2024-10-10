@@ -39,6 +39,10 @@ class BackendInterface(ABC):
         raise NotImplementedError()
 
     @staticmethod
+    def reshape(x, *args, **kwargs):
+        raise NotImplementedError()
+
+    @staticmethod
     def squeeze(x):
         raise NotImplementedError()
 

@@ -53,6 +53,10 @@ class TinyGradBackend(BackendInterface):
         return x.shape
 
     @staticmethod
+    def reshape(x, *args, **kwargs):
+        return x.reshape(x, *args, **kwargs)
+
+    @staticmethod
     def squeeze(x):
         return x.squeeze()
 

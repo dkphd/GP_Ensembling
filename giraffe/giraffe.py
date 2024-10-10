@@ -159,16 +159,21 @@ class Giraffe:
             self.tournament_size = len(tensors)
         return tensors, gt
 
-    def _validate_input(self):
+    def _validate_input(self, fix_swapped=True):  # no way to change this argument for now TODO
         # check if all tensors have the same shape
         shapes = [B.shape(tensor) for tensor in self.tensors.values()]
         if len(set(shapes)) > 1:
             raise ValueError(f"Tensors have different shapes: {shapes}")
 
         if B.shape(self.gt) != shapes[0]:
-            raise ValueError(
-                f"Ground truth tensor has different shape than input tensors: {shapes[0]} != {B.shape(self.gt)}"
-            )
+            if fix_swapped:
+                if (shapes[0] == B.shape(self.gt)[::-1]) and (len(shapes[0]) == 2):
+                    self.gt = B.reshape(self.gt, shapes[0])
+
+            else:
+                raise ValueError(
+                    f"Ground truth tensor has different shape than input tensors: {shapes[0]} != {B.shape(self.gt)}"
+                )
 
     def _initialize_pop(self):
         self.population, _ = regenerate_population(
