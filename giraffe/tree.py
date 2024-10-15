@@ -65,7 +65,7 @@ class Tree:
     def copy(self):
         return Tree.create_tree_from_root(self.root.copy_subtree())
 
-    def prune_at(self, node: Node):
+    def prune_at(self, node: Node):  # remove node from the tree along with its children
         if node.parent is None:
             raise Exception("Cannot prune root node")
 
@@ -78,6 +78,9 @@ class Tree:
                 self.nodes["op_nodes"].remove(subtree_node)
 
         node.parent.children.remove(node)
+
+        if isinstance(node.parent, OperatorNode):  # parent was op node and it lost a child, needs to adjust params
+            node.parent.adjust_params()
 
         self._clean_evals()
 
@@ -93,9 +96,14 @@ class Tree:
         new_node.parent = node
         node.children.append(new_node)
 
+        if isinstance(node, OperatorNode):
+            node.adjust_params()
+
         self._clean_evals()
 
-    def replace_at(self, at: Node, replacement: Node):
+    def replace_at(
+        self, at: Node, replacement: Node
+    ):  # like prune at and then append after parent, but without parameters adjustment (may be worth it to reimplement)
         at_parent = at.parent
 
         if at_parent is None:

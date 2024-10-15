@@ -94,7 +94,8 @@ class OperatorNode(Node, ABC):
     """
     Abstract Base Class for an Operator Node in a computational tree.
 
-    Operator Nodes are specialized nodes capable of performing operations on tensors.
+    Reduction Operator Nodes are specialized Operator Nodes capable
+    of performing reduction operations like mean, max, min, etc., on tensors.
     """
 
     def __init__(
@@ -106,23 +107,6 @@ class OperatorNode(Node, ABC):
         super().__init__(parent, children)
         self.operator = operator
 
-
-class ReductionOperatorNode(OperatorNode, ABC):
-    """
-    Abstract Base Class for a Reduction Operator Node in a computational tree.
-
-    Reduction Operator Nodes are specialized Operator Nodes capable
-    of performing reduction operations like mean, max, min, etc., on tensors.
-    """
-
-    def __init__(
-        self,
-        parent: Optional[Node],
-        children: Optional[List[Node]],
-        operator: Callable[[Tensor], Tensor] = lambda x: None,
-    ):
-        super().__init__(parent, children, operator)
-
     def calculate(self) -> Tensor:
         parent_eval = self.parent.evaluation if self.parent.evaluation is not None else self.parent.value
         concat = B.concat(
@@ -131,8 +115,14 @@ class ReductionOperatorNode(OperatorNode, ABC):
         )
         return self.operator(concat)
 
+    @abstractmethod
+    def adjust_params(
+        self
+    ):  # some reduction operators may have parameters, for example weights. When tree structure changes they may need to be adjusted.
+        pass
 
-class MeanNode(ReductionOperatorNode):
+
+class MeanNode(OperatorNode):
     """
     Represents a Mean Node in a computational tree.
 
@@ -155,6 +145,9 @@ class MeanNode(ReductionOperatorNode):
     @staticmethod
     def get_operator():
         return partial(B.mean, axis=0)
+
+    def adjust_params(self):
+        return
 
 
 class WeightedMeanNode(MeanNode):
@@ -193,8 +186,11 @@ class WeightedMeanNode(MeanNode):
     def get_operator():
         return partial(B.mean, axis=0)
 
+    def adjust_params(self):
+        raise NotImplementedError("NEEDS TO BE IMPLEMENTED")
 
-class MaxNode(ReductionOperatorNode):
+
+class MaxNode(OperatorNode):
     """
     Represents a Max Node in a computational tree.
 
@@ -218,8 +214,11 @@ class MaxNode(ReductionOperatorNode):
     def get_operator():
         return partial(B.max, axis=0)
 
+    def adjust_params(self):
+        return
 
-class MinNode(ReductionOperatorNode):
+
+class MinNode(OperatorNode):
     """
     Represents a Min Node in a computational tree.
 
@@ -242,6 +241,9 @@ class MinNode(ReductionOperatorNode):
     @staticmethod
     def get_operator():
         return partial(B.min, axis=0)
+
+    def adjust_params(self):
+        return
 
 
 class ValueNode(Node):
