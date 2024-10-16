@@ -1,9 +1,11 @@
 from functools import partial
-from typing import List, Optional, Callable, Self
+from typing import List, Optional, Callable, Self, Dict
 from abc import ABC, abstractmethod
 
 from giraffe.globals import BACKEND as B
 from giraffe.types import Tensor
+
+import numpy as np
 
 
 class Node(ABC):
@@ -27,6 +29,9 @@ class Node(ABC):
         - child_node: Node to be added as child
         """
         self.children.append(child_node)
+
+    def remove_child(self, child_node: Self):
+        self.children.remove(child_node)
 
     def get_nodes(self):  # TODO: This is not topologically sorted, change that
         """
@@ -90,160 +95,6 @@ class Node(ABC):
         return self.code()
 
 
-class OperatorNode(Node, ABC):
-    """
-    Abstract Base Class for an Operator Node in a computational tree.
-
-    Operator Nodes are specialized nodes capable of performing operations on tensors.
-    """
-
-    def __init__(
-        self,
-        parent: Optional[Node],
-        children: Optional[List[Node]],
-        operator: Callable[[Tensor], Tensor] = lambda x: None,
-    ):
-        super().__init__(parent, children)
-        self.operator = operator
-
-
-class ReductionOperatorNode(OperatorNode, ABC):
-    """
-    Abstract Base Class for a Reduction Operator Node in a computational tree.
-
-    Reduction Operator Nodes are specialized Operator Nodes capable
-    of performing reduction operations like mean, max, min, etc., on tensors.
-    """
-
-    def __init__(
-        self,
-        parent: Optional[Node],
-        children: Optional[List[Node]],
-        operator: Callable[[Tensor], Tensor] = lambda x: None,
-    ):
-        super().__init__(parent, children, operator)
-
-    def calculate(self) -> Tensor:
-        parent_eval = self.parent.evaluation if self.parent.evaluation is not None else self.parent.value
-        concat = B.concat(
-            [B.unsqueeze(parent_eval, axis=0)] + [B.unsqueeze(child.calculate(), axis=0) for child in self.children],
-            axis=0,
-        )
-        return self.operator(concat)
-
-
-class MeanNode(ReductionOperatorNode):
-    """
-    Represents a Mean Node in a computational tree.
-
-    A Mean Node computes the mean along a specified axis of a tensor.
-    """
-
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children, MeanNode.get_operator())
-
-    def __str__(self) -> str:
-        return "MeanNode"
-
-    def copy(self):
-        return MeanNode(None, None)
-
-    @property
-    def code(self) -> str:
-        return "MN"
-
-    @staticmethod
-    def get_operator():
-        return partial(B.mean, axis=0)
-
-
-class WeightedMeanNode(MeanNode):
-    """
-    Represents a Weighted Mean Node in a computational tree.
-
-    A Weighted Mean Node computes the mean of a tensor,
-    but with different weights applied to each element.
-    """
-
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], weights: Tensor):
-        assert len(weights.shape) == 2
-        assert weights.shape[0] == 1
-        assert weights.shape[1] == len(children) + 1
-
-        self.weights = weights
-
-        super().__init__(parent, children, lambda x: super().operator(x * self.weights))
-
-    def copy(self):
-        return WeightedMeanNode(None, None, self.weights)
-
-    def add_child(self, child_node: Self):
-        raise Exception(
-            "Adding child to weighted mean node is currently not supported due to the way weights are handled."
-        )
-
-    def __str__(self) -> str:
-        return f"WeightedMeanNode with weights: {B.to_numpy(self.weights):.2f}"
-
-    @property
-    def code(self) -> str:
-        return "WMN"
-
-    @staticmethod
-    def get_operator():
-        return partial(B.mean, axis=0)
-
-
-class MaxNode(ReductionOperatorNode):
-    """
-    Represents a Max Node in a computational tree.
-
-    A Max Node computes the maximum value along a specified axis of a tensor.
-    """
-
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children, MaxNode.get_operator())
-
-    def __str__(self) -> str:
-        return "MaxNode"
-
-    def copy(self):
-        return MaxNode(None, None)
-
-    @property
-    def code(self) -> str:
-        return "MXN"
-
-    @staticmethod
-    def get_operator():
-        return partial(B.max, axis=0)
-
-
-class MinNode(ReductionOperatorNode):
-    """
-    Represents a Min Node in a computational tree.
-
-    A Min Node computes the minimum value along a specified axis of a tensor.
-    """
-
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
-        super().__init__(parent, children, MinNode.get_operator())
-
-    def __str__(self) -> str:
-        return "MinNode"
-
-    def copy(self):
-        return MinNode(None, None)
-
-    @property
-    def code(self) -> str:
-        return "MIN"
-
-    @staticmethod
-    def get_operator():
-        return partial(B.min, axis=0)
-
-
 class ValueNode(Node):
     """
     Represents a Value Node in a computational tree.
@@ -278,3 +129,210 @@ class ValueNode(Node):
     @property
     def code(self) -> str:
         return f"VN[{self.id}]"
+
+
+class OperatorNode(Node, ABC):
+    """
+    Abstract Base Class for an Operator Node in a computational tree.
+
+    Reduction Operator Nodes are specialized Operator Nodes capable
+    of performing reduction operations like mean, max, min, etc., on tensors.
+    """
+
+    def __init__(
+        self,
+        parent: Optional[Node],
+        children: Optional[List[Node]],
+        operator: Callable[[Tensor], Tensor] = lambda x: None,
+    ):
+        super().__init__(parent, children)
+        self.operator = operator
+
+    def calculate(self) -> Tensor:
+        parent_eval = self.parent.evaluation if self.parent.evaluation is not None else self.parent.value
+        concat = B.concat(
+            [B.unsqueeze(parent_eval, axis=0)] + [B.unsqueeze(child.calculate(), axis=0) for child in self.children],
+            axis=0,
+        )
+        return self.operator(concat)
+
+    @staticmethod
+    @abstractmethod
+    def create_node(parent, children):
+        raise NotImplementedError()
+
+
+class MeanNode(OperatorNode):
+    """
+    Represents a Mean Node in a computational tree.
+
+    A Mean Node computes the mean along a specified axis of a tensor.
+    """
+
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
+        super().__init__(parent, children, MeanNode.get_operator())
+
+    def __str__(self) -> str:
+        return "MeanNode"
+
+    def copy(self):
+        return MeanNode(None, None)
+
+    @property
+    def code(self) -> str:
+        return "MN"
+
+    @staticmethod
+    def get_operator():
+        return partial(B.mean, axis=0)
+
+    def adjust_params(self):
+        return
+
+    @staticmethod
+    def create_node(parent, children):  # TODO: it could be derived from simple vs parametrized OperatorNode
+        operator = MeanNode.get_operator()
+        return MeanNode(parent, children, operator)
+
+
+class WeightedMeanNode(MeanNode):
+    """
+    Represents a Weighted Mean Node in a computational tree.
+
+    A Weighted Mean Node computes the mean of a tensor,
+    but with different weights applied to each element.
+    """
+
+    def __init__(
+        self,
+        parent: Optional[Node],
+        children: Optional[List[Node]],
+        weights: Dict[int, float],
+    ):
+        for node in [parent] + children:
+            assert id(node) in weights
+        assert sum(weights.values) == 1.0
+
+        self._weights = weights
+
+        super().__init__(parent, children, lambda x: super().operator(x * self.weights))
+
+    def copy(self):
+        return WeightedMeanNode(None, None, self.weights)
+
+    def add_child(self, child_node: ValueNode):
+        assert isinstance(child_node, ValueNode)
+        child_weight = np.random.randint(0, 1)
+        adj = 1.0 - child_weight
+        for key, val in self._weights:
+            self._weights[key] = val * adj
+        self._weights[id(child_node)] = child_weight
+
+        assert sum(self._weights.values()) == 1.0
+
+        return super().add_child(child_node)
+
+    def remove_child(self, child_node: ValueError):
+        assert isinstance(child_node, ValueError)
+
+        adj = 1.0 - self._weights[id(child_node)]
+        self._weights.remove(id(child_node))
+
+        for key, val in self._weights:
+            self._weights[key] = val / adj
+
+        assert sum(self._weights.values()) == 1.0
+
+        return super().remove_child(child_node)
+
+    def __str__(self) -> str:
+        return f"WeightedMeanNode with weights: {B.to_numpy(self.weights):.2f}"
+
+    @property
+    def code(self) -> str:
+        return "WMN"
+
+    @staticmethod
+    def get_operator():
+        return partial(B.mean, axis=0)
+
+    @property
+    def weights(self):
+        return [self._weights[id(node)] for node in [self.parent] + self.children]
+
+    @staticmethod
+    def create_node(parent, children):
+        weights = {id(parent): np.random.randint(0, 1)}
+        weight_left = 1 - weights[id(parent)]
+        for child in children[:-1]:
+            weights[id(child)] = np.random.randint(0, weight_left)
+            weight_left -= weights[id(child)]
+        weights[id(children[-1])] = weight_left
+
+        return WeightedMeanNode(parent, children, weights)
+
+
+class MaxNode(OperatorNode):
+    """
+    Represents a Max Node in a computational tree.
+
+    A Max Node computes the maximum value along a specified axis of a tensor.
+    """
+
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
+        super().__init__(parent, children, MaxNode.get_operator())
+
+    def __str__(self) -> str:
+        return "MaxNode"
+
+    def copy(self):
+        return MaxNode(None, None)
+
+    @property
+    def code(self) -> str:
+        return "MXN"
+
+    @staticmethod
+    def get_operator():
+        return partial(B.max, axis=0)
+
+    def adjust_params(self):
+        return
+
+    @staticmethod
+    def create_node(parent, children):  # TODO: it could be derived from simple vs parametrized OperatorNode
+        operator = MaxNode.get_operator()
+        return MaxNode(parent, children, operator)
+
+
+class MinNode(OperatorNode):
+    """
+    Represents a Min Node in a computational tree.
+
+    A Min Node computes the minimum value along a specified axis of a tensor.
+    """
+
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]]):
+        super().__init__(parent, children, MinNode.get_operator())
+
+    def __str__(self) -> str:
+        return "MinNode"
+
+    def copy(self):
+        return MinNode(None, None)
+
+    @property
+    def code(self) -> str:
+        return "MIN"
+
+    @staticmethod
+    def get_operator():
+        return partial(B.min, axis=0)
+
+    def adjust_params(self):
+        return
+
+    @staticmethod
+    def create_node(parent, children):  # TODO: it could be derived from simple vs parametrized OperatorNode
+        operator = MinNode.get_operator()
+        return MinNode(parent, children, operator)

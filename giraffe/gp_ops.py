@@ -1,6 +1,8 @@
 from giraffe.tree import Tree
-from giraffe.node import ValueNode, MeanNode, MaxNode, MinNode
+from giraffe.node import ValueNode, MeanNode, MaxNode, MinNode, OperatorNode
 from giraffe.globals import VERBOSE
+
+from typing import Iterable
 
 
 import numpy as np
@@ -12,11 +14,8 @@ def crossover(tree1: Tree, tree2: Tree, mutation_chance_crossover=False):
     node1 = tree1.get_random_node()
     if isinstance(node1, ValueNode):
         node2 = tree2.get_random_node("value_nodes")
-        if type(node1) != type(node2):
-            raise Exception("Cannot crossover nodes of different types")
     else:
-        node_types = "op_nodes"
-        node2 = tree2.get_random_node(node_types)
+        node2 = tree2.get_random_node("op_nodes")
 
     replacement_node1 = node2.copy_subtree()
     replacement_node2 = node1.copy_subtree()
@@ -39,7 +38,9 @@ def crossover(tree1: Tree, tree2: Tree, mutation_chance_crossover=False):
 # Mutations
 
 
-def append_new_node_mutation(tree: Tree, models, ids=None, allowed_ops=(MeanNode, MaxNode, MinNode), **kwargs):
+def append_new_node_mutation(
+    tree: Tree, models, ids=None, allowed_ops: Iterable[OperatorNode] = (MeanNode, MaxNode, MinNode), **kwargs
+):
     tree = tree.copy()
 
     if ids is None:
@@ -48,13 +49,18 @@ def append_new_node_mutation(tree: Tree, models, ids=None, allowed_ops=(MeanNode
     idx_model = np.random.choice(np.arange(len(models)))
 
     node = tree.get_random_node()
-    if isinstance(node, ValueNode):
-        new_op = np.random.choice(allowed_ops, 1)[0](node, [])
-        new_val = ValueNode(new_op, [], models[idx_model], ids[idx_model])
-        new_op.add_child(new_val)
+    if isinstance(node, ValueNode):  # need to add operator first, then another value node
+        new_val = ValueNode(None, [], models[idx_model], ids[idx_model])
+
+        new_op_choice = np.random.choice(allowed_ops, 1)[0]
+        new_op = new_op_choice.create_node(node, [new_val])
+
+        new_val.parent = new_op
+        node.add_child(new_op)
+
         tree.append_after(node, new_op)
     else:
-        new_val = ValueNode(None, [], models[idx_model], ids[idx_model])
+        new_val = ValueNode(node, [], models[idx_model], ids[idx_model])
         tree.append_after(node, new_val)
 
     return tree
