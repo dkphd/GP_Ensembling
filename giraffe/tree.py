@@ -77,10 +77,7 @@ class Tree:
             else:
                 self.nodes["op_nodes"].remove(subtree_node)
 
-        node.parent.children.remove(node)
-
-        if isinstance(node.parent, OperatorNode):  # parent was op node and it lost a child, needs to adjust params
-            node.parent.adjust_params()
+        node.parent.remove_child(node)
 
         self._clean_evals()
 
@@ -95,9 +92,6 @@ class Tree:
 
         new_node.parent = node
         node.add_child(new_node)
-
-        if isinstance(node, OperatorNode):
-            node.adjust_params()
 
         self._clean_evals()
 
@@ -114,9 +108,11 @@ class Tree:
                 raise Exception("Cannot get evaluation of tree with OpNode as root")
 
         else:
-            at_parent.children.remove(at)
+            at_parent.children.remove(
+                at
+            )  # like that instead of .remove_child because we want to skip adjusting parameters
             replacement.parent = at_parent
-            at_parent.add_child(replacement)
+            at_parent.children.append(replacement)  # as above
 
         if isinstance(at, ValueNode):
             self.nodes["value_nodes"].remove(at)

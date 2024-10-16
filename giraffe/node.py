@@ -30,6 +30,9 @@ class Node(ABC):
         """
         self.children.append(child_node)
 
+    def remove_child(self, child_node: Self):
+        self.children.remove(child_node)
+
     def get_nodes(self):  # TODO: This is not topologically sorted, change that
         """
         Get all nodes in the tree created by node and it's subnodes.
@@ -153,12 +156,6 @@ class OperatorNode(Node, ABC):
         )
         return self.operator(concat)
 
-    @abstractmethod
-    def adjust_params(
-        self,
-    ):  # some reduction operators may have parameters, for example weights. When tree structure changes they may need to be adjusted.
-        pass
-
 
 class MeanNode(OperatorNode):
     """
@@ -224,7 +221,19 @@ class WeightedMeanNode(MeanNode):
         for key, val in self._weights:
             self._weights[key] = val * adj
         self._weights[id(child_node)] = child_weight
-        self.children.append(child_node)
+
+        return super().add_child(child_node)
+
+    def remove_child(self, child_node: ValueError):
+        assert isinstance(child_node, ValueError)
+
+        adj = 1.0 - self._weights[id(child_node)]
+        self._weights.remove(id(child_node))
+
+        for key, val in self._weights:
+            self._weights[key] = val / adj
+
+        return super().remove_child(child_node)
 
     def __str__(self) -> str:
         return f"WeightedMeanNode with weights: {B.to_numpy(self.weights):.2f}"
@@ -236,9 +245,6 @@ class WeightedMeanNode(MeanNode):
     @staticmethod
     def get_operator():
         return partial(B.mean, axis=0)
-
-    def adjust_params(self):  # possibly not needed if add and remove child take care of it
-        raise NotImplementedError("NEEDS TO BE IMPLEMENTED")
 
     @property
     def weights(self):
