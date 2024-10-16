@@ -1,9 +1,11 @@
 from functools import partial
-from typing import List, Optional, Callable, Self
+from typing import List, Optional, Callable, Self, Dict
 from abc import ABC, abstractmethod
 
 from giraffe.globals import BACKEND as B
 from giraffe.types import Tensor
+
+import numpy as np
 
 
 class Node(ABC):
@@ -90,6 +92,42 @@ class Node(ABC):
         return self.code()
 
 
+class ValueNode(Node):
+    """
+    Represents a Value Node in a computational tree.
+
+    A Value Node holds a specific value or tensor.
+    """
+
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], value: Tensor, id: int = None):
+        super().__init__(parent, children)
+        self.value = value
+        self.evaluation = None
+        self.id = id
+
+    def calculate(self):
+        if self.children:
+            for child in self.children:
+                self.evaluation = child.calculate()
+        else:
+            self.evaluation = self.value
+        return self.evaluation
+
+    def __str__(self):
+        return f"ValueNode with value at: {hex(id(self.value))}"  # and evaluation: {self.evaluation}"
+
+    def add_child(self, child_node):
+        super().add_child(child_node)
+        self.evaluation = None
+
+    def copy(self):
+        return ValueNode(None, None, self.value, self.id)
+
+    @property
+    def code(self) -> str:
+        return f"VN[{self.id}]"
+
+
 class OperatorNode(Node, ABC):
     """
     Abstract Base Class for an Operator Node in a computational tree.
@@ -117,7 +155,7 @@ class OperatorNode(Node, ABC):
 
     @abstractmethod
     def adjust_params(
-        self
+        self,
     ):  # some reduction operators may have parameters, for example weights. When tree structure changes they may need to be adjusted.
         pass
 
@@ -158,22 +196,35 @@ class WeightedMeanNode(MeanNode):
     but with different weights applied to each element.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], weights: Tensor):
-        assert len(weights.shape) == 2
-        assert weights.shape[0] == 1
-        assert weights.shape[1] == len(children) + 1
+    def __init__(
+        self,
+        parent: Optional[Node],
+        children: Optional[List[Node]],
+        weights: Dict[int, float],
+        randomizer=lambda _: np.random.randint(0, 1),
+    ):
+        for node in [parent] + children:
+            assert id(node) in weights
+        assert sum(weights.values) == 1.0
 
-        self.weights = weights
+        self._weights = weights
+        self.randomizer = randomizer
 
         super().__init__(parent, children, lambda x: super().operator(x * self.weights))
 
     def copy(self):
         return WeightedMeanNode(None, None, self.weights)
 
-    def add_child(self, child_node: Self):
-        raise Exception(
-            "Adding child to weighted mean node is currently not supported due to the way weights are handled."
-        )
+    def add_child(self, child_node: ValueNode):
+        assert isinstance(child_node, ValueNode)
+        child_weight = self.randomizer(
+            self
+        )  # by default the parameter is not needed, but will be useful for inheritance
+        adj = 1.0 - child_weight
+        for key, val in self._weights:
+            self._weights[key] = val * adj
+        self._weights[id(child_node)] = child_weight
+        self.children.append(child_node)
 
     def __str__(self) -> str:
         return f"WeightedMeanNode with weights: {B.to_numpy(self.weights):.2f}"
@@ -186,8 +237,12 @@ class WeightedMeanNode(MeanNode):
     def get_operator():
         return partial(B.mean, axis=0)
 
-    def adjust_params(self):
+    def adjust_params(self):  # possibly not needed if add and remove child take care of it
         raise NotImplementedError("NEEDS TO BE IMPLEMENTED")
+
+    @property
+    def weights(self):
+        return [self._weights[id(node)] for node in [self.parent] + self.children]
 
 
 class MaxNode(OperatorNode):
@@ -244,39 +299,3 @@ class MinNode(OperatorNode):
 
     def adjust_params(self):
         return
-
-
-class ValueNode(Node):
-    """
-    Represents a Value Node in a computational tree.
-
-    A Value Node holds a specific value or tensor.
-    """
-
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], value: Tensor, id: int = None):
-        super().__init__(parent, children)
-        self.value = value
-        self.evaluation = None
-        self.id = id
-
-    def calculate(self):
-        if self.children:
-            for child in self.children:
-                self.evaluation = child.calculate()
-        else:
-            self.evaluation = self.value
-        return self.evaluation
-
-    def __str__(self):
-        return f"ValueNode with value at: {hex(id(self.value))}"  # and evaluation: {self.evaluation}"
-
-    def add_child(self, child_node):
-        super().add_child(child_node)
-        self.evaluation = None
-
-    def copy(self):
-        return ValueNode(None, None, self.value, self.id)
-
-    @property
-    def code(self) -> str:
-        return f"VN[{self.id}]"

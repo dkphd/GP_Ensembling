@@ -4,7 +4,7 @@ from giraffe.globals import BACKEND as B
 from giraffe.types import Tensor
 
 import numpy as np
-from sklearn.metrics import f1_score, average_precision_score, precision_recall_curve
+from sklearn.metrics import f1_score, average_precision_score, precision_recall_curve, roc_auc_score
 
 from enum import Enum, member
 
@@ -20,6 +20,12 @@ def average_precision_fitness(tree: Tree, gt: Tensor):
     pred = tree.evaluation
     gt = B.to_float(gt)
     return average_precision_score(B.to_numpy(gt).ravel(), B.to_numpy(pred).ravel())
+
+
+def roc_auc_score_fitness(tree: Tree, gt: Tensor):
+    pred = tree.evaluation
+    gt = B.to_float(gt)
+    return roc_auc_score(B.to_numpy(gt).ravel(), B.to_numpy(pred).ravel())
 
 
 def binary_cross_entropy_loss(y_true, y_pred, epsilon=1e-15):

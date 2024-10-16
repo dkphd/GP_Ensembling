@@ -94,7 +94,7 @@ class Tree:
                 self.nodes["op_nodes"].append(subtree_node)
 
         new_node.parent = node
-        node.children.append(new_node)
+        node.add_child(new_node)
 
         if isinstance(node, OperatorNode):
             node.adjust_params()
@@ -116,7 +116,7 @@ class Tree:
         else:
             at_parent.children.remove(at)
             replacement.parent = at_parent
-            at_parent.children.append(replacement)
+            at_parent.add_child(replacement)
 
         if isinstance(at, ValueNode):
             self.nodes["value_nodes"].remove(at)
