@@ -156,6 +156,11 @@ class OperatorNode(Node, ABC):
         )
         return self.operator(concat)
 
+    @staticmethod
+    @abstractmethod
+    def create_node(parent, children):
+        raise NotImplementedError()
+
 
 class MeanNode(OperatorNode):
     """
@@ -184,6 +189,11 @@ class MeanNode(OperatorNode):
     def adjust_params(self):
         return
 
+    @staticmethod
+    def create_node(parent, children):  # TODO: it could be derived from simple vs parametrized OperatorNode
+        operator = MeanNode.get_operator()
+        return MeanNode(parent, children, operator)
+
 
 class WeightedMeanNode(MeanNode):
     """
@@ -198,14 +208,12 @@ class WeightedMeanNode(MeanNode):
         parent: Optional[Node],
         children: Optional[List[Node]],
         weights: Dict[int, float],
-        randomizer=lambda _: np.random.randint(0, 1),
     ):
         for node in [parent] + children:
             assert id(node) in weights
         assert sum(weights.values) == 1.0
 
         self._weights = weights
-        self.randomizer = randomizer
 
         super().__init__(parent, children, lambda x: super().operator(x * self.weights))
 
@@ -214,13 +222,13 @@ class WeightedMeanNode(MeanNode):
 
     def add_child(self, child_node: ValueNode):
         assert isinstance(child_node, ValueNode)
-        child_weight = self.randomizer(
-            self
-        )  # by default the parameter is not needed, but will be useful for inheritance
+        child_weight = np.random.randint(0, 1)
         adj = 1.0 - child_weight
         for key, val in self._weights:
             self._weights[key] = val * adj
         self._weights[id(child_node)] = child_weight
+
+        assert sum(self._weights.values()) == 1.0
 
         return super().add_child(child_node)
 
@@ -232,6 +240,8 @@ class WeightedMeanNode(MeanNode):
 
         for key, val in self._weights:
             self._weights[key] = val / adj
+
+        assert sum(self._weights.values()) == 1.0
 
         return super().remove_child(child_node)
 
@@ -249,6 +259,17 @@ class WeightedMeanNode(MeanNode):
     @property
     def weights(self):
         return [self._weights[id(node)] for node in [self.parent] + self.children]
+
+    @staticmethod
+    def create_node(parent, children):
+        weights = {id(parent): np.random.randint(0, 1)}
+        weight_left = 1 - weights[id(parent)]
+        for child in children[:-1]:
+            weights[id(child)] = np.random.randint(0, weight_left)
+            weight_left -= weights[id(child)]
+        weights[id(children[-1])] = weight_left
+
+        return WeightedMeanNode(parent, children, weights)
 
 
 class MaxNode(OperatorNode):
@@ -278,6 +299,11 @@ class MaxNode(OperatorNode):
     def adjust_params(self):
         return
 
+    @staticmethod
+    def create_node(parent, children):  # TODO: it could be derived from simple vs parametrized OperatorNode
+        operator = MaxNode.get_operator()
+        return MaxNode(parent, children, operator)
+
 
 class MinNode(OperatorNode):
     """
@@ -305,3 +331,8 @@ class MinNode(OperatorNode):
 
     def adjust_params(self):
         return
+
+    @staticmethod
+    def create_node(parent, children):  # TODO: it could be derived from simple vs parametrized OperatorNode
+        operator = MinNode.get_operator()
+        return MinNode(parent, children, operator)
