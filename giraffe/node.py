@@ -1,5 +1,5 @@
 from functools import partial
-from typing import List, Optional, Callable, Self, Dict
+from typing import List, Optional, Callable, Self, Union
 from abc import ABC, abstractmethod
 
 from giraffe.globals import BACKEND as B
@@ -29,9 +29,14 @@ class Node(ABC):
         - child_node: Node to be added as child
         """
         self.children.append(child_node)
+        child_node.parent = self
 
     def remove_child(self, child_node: Self):
         self.children.remove(child_node)
+
+    def replace_child(self, child, replacement_node):
+        self.add_child(replacement_node)
+        self.remove_child(child)
 
     def get_nodes(self):  # TODO: This is not topologically sorted, change that
         """
@@ -102,7 +107,7 @@ class ValueNode(Node):
     A Value Node holds a specific value or tensor.
     """
 
-    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], value: Tensor, id: int = None):
+    def __init__(self, parent: Optional[Node], children: Optional[List[Node]], value: Tensor, id: Union[int, str]):
         super().__init__(parent, children)
         self.value = value
         self.evaluation = None
@@ -191,8 +196,7 @@ class MeanNode(OperatorNode):
 
     @staticmethod
     def create_node(parent, children):  # TODO: it could be derived from simple vs parametrized OperatorNode
-        operator = MeanNode.get_operator()
-        return MeanNode(parent, children, operator)
+        return MeanNode(parent, children)
 
 
 class WeightedMeanNode(MeanNode):
@@ -205,71 +209,98 @@ class WeightedMeanNode(MeanNode):
 
     def __init__(
         self,
-        parent: Optional[Node],
-        children: Optional[List[Node]],
-        weights: Dict[int, float],
+        parent: ValueNode,
+        children: List[ValueNode],
+        weights: List[float],
     ):
-        for node in [parent] + children:
-            assert id(node) in weights
-        assert sum(weights.values) == 1.0
-
         self._weights = weights
+        super().__init__(parent, children)
 
-        super().__init__(parent, children, lambda x: super().operator(x * self.weights))
+        self._node_weight_assertion()
+
+        self.operator = self.op
+
+    def op(self, x):
+        weight_shape = (-1, *([1] * (len(x.shape) - 1)))
+        w = B.reshape(self.weights, weight_shape)
+        x = x * w
+        x = B.sum(x, axis=0)
+        return x
 
     def copy(self):
-        return WeightedMeanNode(None, None, self.weights)
+        return WeightedMeanNode(None, [], [x for x in self._weights])
 
     def add_child(self, child_node: ValueNode):
         assert isinstance(child_node, ValueNode)
-        child_weight = np.random.randint(0, 1)
+        child_weight = np.random.uniform(0, 1)
         adj = 1.0 - child_weight
-        for key, val in self._weights:
-            self._weights[key] = val * adj
-        self._weights[id(child_node)] = child_weight
 
-        assert sum(self._weights.values()) == 1.0
+        for i, val in enumerate(self._weights):
+            self._weights[i] = val * adj
 
-        return super().add_child(child_node)
+        self._weights.append(child_weight)
+        child_node.parent = self
+        self.children.append(child_node)
 
-    def remove_child(self, child_node: ValueError):
-        assert isinstance(child_node, ValueError)
+        self._node_weight_assertion()
+        assert len(self._weights) == (
+            len(self.children) + 1
+        ), "Length of weight array is different than number of adjacent nodes"
 
-        adj = 1.0 - self._weights[id(child_node)]
-        self._weights.remove(id(child_node))
+    def remove_child(self, child_node: ValueNode):
+        assert isinstance(child_node, ValueNode)
 
-        for key, val in self._weights:
-            self._weights[key] = val / adj
+        child_ix = self.children.index(child_node)
 
-        assert sum(self._weights.values()) == 1.0
+        adj = 1.0 - self._weights[child_ix]
+        self._weights.pop(child_ix)
+        self.children.pop(child_ix)
 
-        return super().remove_child(child_node)
+        for i, val in enumerate(self._weights):
+            self._weights[i] = val / adj
+
+        self._node_weight_assertion()
+        assert len(self._weights) == (
+            len(self.children) + 1
+        ), "Length of weight array is different than number of adjacent nodes"
+
+    def replace_child(self, child, replacement_node):
+        child_ix = self.children.index(child)
+        self.children[child_ix] = replacement_node
+        replacement_node.parent = self
+        assert len(self._weights) == (
+            len(self.children) + 1
+        ), "Length of weight array is different than number of adjacent nodes"
 
     def __str__(self) -> str:
-        return f"WeightedMeanNode with weights: {B.to_numpy(self.weights):.2f}"
+        return f"WeightedMeanNode with weights: {B.to_numpy(B.tensor(self._weights)).round(2)}"
 
     @property
     def code(self) -> str:
         return "WMN"
 
-    @staticmethod
+    @staticmethod  # this should not be static because for parametrized it doesnt work well
     def get_operator():
         return partial(B.mean, axis=0)
 
     @property
     def weights(self):
-        return [self._weights[id(node)] for node in [self.parent] + self.children]
+        w = B.tensor(self._weights)
+        return w
 
     @staticmethod
     def create_node(parent, children):
-        weights = {id(parent): np.random.randint(0, 1)}
-        weight_left = 1 - weights[id(parent)]
+        weights = [np.random.uniform(0, 1)]
+        weight_left = 1 - weights[0]
         for child in children[:-1]:
-            weights[id(child)] = np.random.randint(0, weight_left)
-            weight_left -= weights[id(child)]
-        weights[id(children[-1])] = weight_left
+            weights.append(np.random.uniform(0, weight_left))
+            weight_left -= weights[-1]
+        weights.append(weight_left)
 
         return WeightedMeanNode(parent, children, weights)
+
+    def _node_weight_assertion(self):
+        assert np.isclose(np.sum(self._weights), 1), "Weights do not sum to 1"
 
 
 class MaxNode(OperatorNode):
@@ -290,7 +321,7 @@ class MaxNode(OperatorNode):
 
     @property
     def code(self) -> str:
-        return "MXN"
+        return "MAX"
 
     @staticmethod
     def get_operator():
@@ -299,10 +330,13 @@ class MaxNode(OperatorNode):
     def adjust_params(self):
         return
 
+    def remove_child(self, child_node: Self):
+        assert len(self.children) > 1, "SHOULD REMOVE ONLY CHILD"
+        return super().remove_child(child_node)
+
     @staticmethod
     def create_node(parent, children):  # TODO: it could be derived from simple vs parametrized OperatorNode
-        operator = MaxNode.get_operator()
-        return MaxNode(parent, children, operator)
+        return MaxNode(parent, children)
 
 
 class MinNode(OperatorNode):
@@ -334,5 +368,4 @@ class MinNode(OperatorNode):
 
     @staticmethod
     def create_node(parent, children):  # TODO: it could be derived from simple vs parametrized OperatorNode
-        operator = MinNode.get_operator()
-        return MinNode(parent, children, operator)
+        return MinNode(parent, children)

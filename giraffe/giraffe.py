@@ -197,11 +197,7 @@ class Giraffe:
             parent_idxs = idxs[np.argsort(tournament_fitnesses)[-2:]]
             parent1, parent2 = self.population[parent_idxs[0]], self.population[parent_idxs[1]]
 
-            try:
-                child1, child2 = crossover(parent1, parent2, mutation_chance_crossover=self.mutation_chance_crossover)
-            except Exception:
-                # print("Crossover failed due to: ", e)
-                continue
+            child1, child2 = crossover(parent1, parent2, mutation_chance_crossover=self.mutation_chance_crossover)
 
             child1.update_nodes()
             child2.update_nodes()

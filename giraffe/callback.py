@@ -44,6 +44,14 @@ class EarlyStoppingCallback(Callback):
             self.fitnesses = giraffe.fitnesses
 
 
+class PrintBestFitnessCallback(Callback):
+    def __init__(self):
+        super().__init__()
+
+    def on_generation_end(self, giraffe: Giraffe) -> None:
+        print(f"Fitness after iteration {giraffe.iteration} = {np.max(giraffe.fitnesses)}")
+
+
 class SaveParetoCallback(Callback):
     def __init__(self, path: Union[str, Path], filename="tree") -> None:
         super().__init__()

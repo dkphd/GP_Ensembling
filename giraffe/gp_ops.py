@@ -1,6 +1,5 @@
 from giraffe.tree import Tree
 from giraffe.node import ValueNode, MeanNode, MaxNode, MinNode, OperatorNode
-from giraffe.globals import VERBOSE
 
 from typing import Iterable
 
@@ -11,7 +10,11 @@ import numpy as np
 def crossover(tree1: Tree, tree2: Tree, mutation_chance_crossover=False):
     tree1, tree2 = tree1.copy(), tree2.copy()
 
-    node1 = tree1.get_random_node()
+    allowed_node_type = None
+    if (len(tree1.nodes["op_nodes"]) == 0) or (len(tree2.nodes["op_nodes"]) == 0):
+        allowed_node_type = "value_nodes"
+
+    node1 = tree1.get_random_node(allowed_node_type)
     if isinstance(node1, ValueNode):
         node2 = tree2.get_random_node("value_nodes")
     else:
@@ -53,12 +56,11 @@ def append_new_node_mutation(
         new_val = ValueNode(None, [], models[idx_model], ids[idx_model])
 
         new_op_choice = np.random.choice(allowed_ops, 1)[0]
+
         new_op = new_op_choice.create_node(node, [new_val])
 
-        new_val.parent = new_op
-        node.add_child(new_op)
-
         tree.append_after(node, new_op)
+
     else:
         new_val = ValueNode(node, [], models[idx_model], ids[idx_model])
         tree.append_after(node, new_val)
@@ -74,22 +76,20 @@ def lose_branch_mutation(tree: Tree, **kwargs):
     return tree
 
 
-MUTATION_FUNCTIONS = [append_new_node_mutation, lose_branch_mutation]
+MUTATION_FUNCTIONS = [append_new_node_mutation, lose_branch_mutation]  # this should be a parameter
 
 
 def mutate_population(population, tensors, ids, allowed_ops=(MeanNode, MaxNode, MinNode)):
     mutated_trees = []
     for tree in population:
         if np.random.rand() < tree.mutation_chance:
-            try:
-                mutation_function = np.random.choice(MUTATION_FUNCTIONS, 1)[0]
-                mutated_tree = mutation_function(tree, models=tensors, ids=ids, allowed_ops=allowed_ops)
-                mutated_tree.update_nodes()
-                mutated_trees.append(mutated_tree)
-            except Exception as e:
-                if VERBOSE > 2:
-                    print("Mutation failed due to: ", e)
-                continue
+            MUTATION_FUNCTIONS = [append_new_node_mutation]
+            if len(tree.nodes["op_nodes"]) > 2:
+                MUTATION_FUNCTIONS.append(lose_branch_mutation)
+            mutation_function = np.random.choice(MUTATION_FUNCTIONS, 1)[0]
+            mutated_tree = mutation_function(tree, models=tensors, ids=ids, allowed_ops=allowed_ops)
+            mutated_tree.update_nodes()
+            mutated_trees.append(mutated_tree)
 
     return mutated_trees
 

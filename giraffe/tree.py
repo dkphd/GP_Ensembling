@@ -68,6 +68,8 @@ class Tree:
     def prune_at(self, node: Node):  # remove node from the tree along with its children
         if node.parent is None:
             raise Exception("Cannot prune root node")
+        if isinstance(node.parent, OperatorNode) and (len(node.parent.children) < 2):
+            return self.prune_at(node.parent)
 
         subtree_nodes = node.get_nodes()
 
@@ -101,18 +103,12 @@ class Tree:
         at_parent = at.parent
 
         if at_parent is None:
+            assert isinstance(self.root, ValueNode), "Root must be a value node"
             if VERBOSE >= 3:
                 print("Warning: node at replacement is root node")
             self.root = replacement
-            if isinstance(self.root, OperatorNode):
-                raise Exception("Cannot get evaluation of tree with OpNode as root")
-
         else:
-            at_parent.children.remove(
-                at
-            )  # like that instead of .remove_child because we want to skip adjusting parameters
-            replacement.parent = at_parent
-            at_parent.children.append(replacement)  # as above
+            at_parent.replace_child(at, replacement)
 
         if isinstance(at, ValueNode):
             self.nodes["value_nodes"].remove(at)
@@ -137,6 +133,7 @@ class Tree:
             nodes_type = np.random.choice(["value_nodes", "op_nodes"])
 
         order = np.arange(len(self.nodes[nodes_type]))
+        np.random.shuffle(order)
         for i in order:
             node = self.nodes[nodes_type][i]
             if (allow_leaves or node.children != []) and (allow_root or node != self.root):
@@ -154,7 +151,7 @@ class Tree:
     def get_unique_value_node_ids(self):
         return list(set([node.id for node in self.nodes["value_nodes"]]))
 
-    def save_tree_architecture(self, output_path):
+    def save_tree_architecture(self, output_path):  # TODO: needs adjustment for weighted node
         copy_tree = self.copy()
         for index_node, node in enumerate(copy_tree.nodes["value_nodes"]):
             node.value = node.evaluation = None
@@ -162,7 +159,7 @@ class Tree:
         Pickle.save(output_path, copy_tree)
 
     @staticmethod
-    def load_tree_architecture(architecture_path):
+    def load_tree_architecture(architecture_path):  # TODO: needs adjustmed for weighted node
         architeture = Pickle.load(architecture_path)
         for operator_node in architeture.nodes["op_nodes"]:
             operator_node.operator = type(operator_node).get_operator()
