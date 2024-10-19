@@ -4,6 +4,10 @@ from giraffe.backend.backend_interface import BackendInterface
 
 class TinyGradBackend(BackendInterface):
     @staticmethod
+    def tensor(x):
+        return Tensor(x)
+
+    @staticmethod
     def concat(tensors, axis=0):
         return Tensor.stack(tensors, dim=axis)
 
@@ -18,6 +22,10 @@ class TinyGradBackend(BackendInterface):
     @staticmethod
     def min(x, axis=None):
         return Tensor.min(x, axis=axis)
+
+    @staticmethod
+    def sum(x, axis=None):
+        return Tensor.sum(x, axis=axis)
 
     @staticmethod
     def to_numpy(x):

@@ -6,6 +6,10 @@ class PyTorchBackend(BackendInterface):
     # rewrite all not call the already defined functions
 
     @staticmethod
+    def tensor(x):
+        return torch.tensor(x)
+
+    @staticmethod
     def concat(tensors, axis=0):
         # check if tensors are not unidimensional, if so we need to add singular dimension before concatenating
         if len(tensors[0].shape) == 1:
@@ -14,15 +18,19 @@ class PyTorchBackend(BackendInterface):
 
     @staticmethod
     def mean(x, axis=None):
-        return torch.mean(x, axis=axis)
+        return torch.mean(x, dim=axis)
 
     @staticmethod
     def max(x, axis=None):
-        return torch.max(x, axis=axis).values
+        return torch.max(x, dim=axis).values
 
     @staticmethod
     def min(x, axis=None):
-        return torch.min(x, axis=axis).values
+        return torch.min(x, dim=axis).values
+
+    @staticmethod
+    def sum(x, axis=None):
+        return torch.sum(x, dim=axis)
 
     @staticmethod
     def to_numpy(x):

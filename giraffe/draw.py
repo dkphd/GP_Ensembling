@@ -51,7 +51,7 @@ def draw_tree(to_draw: Union[Tree, Node], dot=None, add_val_eval=True):
             display_string,
         )
     else:
-        dot.node(f"{hex(id(node))}", f"Op\n{type(node).__name__}")
+        dot.node(f"{hex(id(node))}", f"Op\n{str(node)}")
 
     for child in node.children:
         draw_tree(child, dot, add_val_eval)
